@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ad decision maps</title>
+<title>Ad serving setups</title>
+<meta name="description" content="Interactive maps of common ad serving setups: who collects bids, how the ad server decides, and where the winning creative's code runs.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
@@ -101,6 +102,7 @@ svg text{font-family:var(--sans)}
 .e{stroke:var(--ink3);stroke-width:1.2;fill:none}
 .ll{stroke:var(--ink3);stroke-width:0.8;stroke-dasharray:4 4}
 .ml{font-size:12px;fill:var(--ink2)}
+.el{font-size:12px;fill:var(--ink2);paint-order:stroke;stroke:var(--bg);stroke-width:5px;stroke-linejoin:round}
 .k-prebid{--f:var(--prebid-f);--s:var(--prebid-s);--t:var(--prebid-t);--u:var(--prebid-u)}
 .k-gam{--f:var(--gam-f);--s:var(--gam-s);--t:var(--gam-t);--u:var(--gam-u)}
 .k-google{--f:var(--google-f);--s:var(--google-s);--t:var(--google-t);--u:var(--google-u)}
@@ -117,7 +119,7 @@ svg text{font-family:var(--sans)}
 </head>
 <body>
 <header>
-  <h1>Ad decision maps</h1>
+  <h1>Ad serving setups</h1>
   <div class="crumbs" id="crumbs"></div>
 </header>
 <div class="layout">
@@ -229,7 +231,7 @@ function singleFlow(o){
 /* ---------- all diagrams ---------- */
 const D = {
 overview:{
-  title:'Where the ad decision happens', parent:null, h:380,
+  title:'All setups at a glance', parent:null, h:380,
   summary:`<p>Every ad slot ends in the same place: an ad server (or, in apps, a mediation platform) picks a winner and a creative runs somewhere. What differs is who collects bids first, how those bids reach the decision-maker, and who draws the winning ad.</p><p>Click any box with a round marker to open its map. Every other box, including the dashed groups, explains itself when clicked.</p>`,
   groups:[
     {x:20,y:20,w:640,h:124,label:'Web pages',k:'frame',
@@ -319,7 +321,7 @@ overview:{
       info:`<p>One price-priority line item per price bucket (0.10, 0.20 ... 2.50 ...), each targeting <code>hb_pb</code> with the exact string format Prebid sends (for example <code>2.50</code>, not <code>2.5</code>). Each line item carries the Prebid Universal Creative.</p>`},
     {id:'ax',x:440,y:360,w:160,h:56,t:'AdX / Open Bidding',s:'Must beat $2.50',k:'google',info:INFO.adx},
     {id:'w',x:220,y:450,w:240,h:44,t:'Highest eligible wins',k:'page',info:INFO.wins},
-    {id:'pw',x:80,y:560,w:240,h:56,t:'Prebid wins',s:'Creative renders SSP B ad',k:'prebid',go:'puc',exec:true},
+    {id:'pw',x:80,y:560,w:240,h:56,t:'Prebid wins',s:'Creative renders SSP B ad',k:'prebid',go:'render',exec:true},
     {id:'gw',x:360,y:560,w:240,h:56,t:'GAM demand wins',s:'Direct or AdX ad serves',k:'google',exec:true,info:INFO.gamWins}
   ],
   edges:[
@@ -332,12 +334,35 @@ overview:{
   code:[{label:'Page: send Prebid keys to GAM',body:SNIP.pbjsGam},{label:'GAM creative on each Prebid line item',body:SNIP.puc}]
 },
 
+render:{
+  title:'How a winning Prebid bid renders', parent:'prebid-gam', h:400,
+  summary:`<p>When a Prebid line item wins, the ad server serves a creative that holds no ad, only a pointer to one. There are three ways that creative reaches the real ad, depending on whether Prebid.js is on the page and whether the creative's iframe is same-origin with the page.</p><p>The three paths also differ in what the ad's own code can reach once it runs. The legacy direct-call path is the riskiest, because the ad runs in the page's own origin.</p>`,
+  nodes:[
+    {id:'won',x:200,y:20,w:280,h:56,t:'Prebid line item wins',s:'Ad server serves its creative',k:'prebid',
+      info:`<p>The Prebid line item won in the ad server, which now serves that line item's creative into the slot. The creative carries pointers, not an ad: <code>hb_adid</code> for Prebid.js, or the <code>hb_cache_*</code> keys for Prebid Cache.</p><p>Video works differently: instream plays through a VAST redirect and outstream through a renderer on the page. Both have their own maps.</p>`},
+    {id:'q1',x:200,y:116,w:280,h:56,t:'Is Prebid.js on the page?',s:'Web page vs AMP or app',k:'page',
+      info:`<p>On a normal web page, Prebid.js ran the auction and still holds the winning bid in memory. On AMP pages and in apps, the auction ran in Prebid Server and nothing on the page holds the bid, so the creative has to fetch it from Prebid Cache.</p>`},
+    {id:'q2',x:60,y:212,w:300,h:56,t:'Can the creative reach it?',s:'Friendly iframe vs SafeFrame',k:'page',
+      info:`<p>That depends on how the ad server delivers the creative. A friendly iframe (SafeFrame turned off on the creative) is same-origin with the page, so the creative can call Prebid.js directly. A SafeFrame is served from another domain, so the browser blocks direct access and the creative has to send a message instead.</p>`},
+    {id:'lg',x:40,y:308,w:190,h:64,t:'Direct call',s:'Friendly iframe (legacy)',k:'prebid',exec:true,go:'render-legacy'},
+    {id:'pm',x:250,y:308,w:190,h:64,t:'postMessage',s:'SafeFrame (current PUC)',k:'prebid',exec:true,go:'puc'},
+    {id:'ch',x:460,y:308,w:190,h:64,t:'Fetch from cache',s:'AMP and apps',k:'prebid',exec:true,go:'render-cache'}
+  ],
+  edges:[
+    {a:'won',b:'q1'},
+    {p:[[300,172],[230,210]],l:'Yes',lx:254,ly:196},
+    {p:[[400,172],[555,306]],l:'No',lx:490,ly:238},
+    {p:[[160,268],[135,306]],l:'Same-origin',lx:112,ly:292},
+    {p:[[260,268],[345,306]],l:'SafeFrame',lx:334,ly:284}
+  ]
+},
+
 puc:{
-  title:'How the Prebid Universal Creative renders', parent:'prebid-gam', kind:'seq', h:470,
-  summary:`<p>The GAM creative contains no ad, only the bid ID. It uses <code>postMessage</code> to ask Prebid.js on the page for that bid, because the iframe is often a cross-origin SafeFrame and can't reach into the page. Prebid.js replies with the ad markup and the creative writes it into its own iframe.</p><p>With no Prebid.js on the page (AMP, apps), the creative instead fetches the ad from Prebid Cache using the <code>hb_cache_*</code> keys.</p>`,
+  title:'Render via postMessage (SafeFrame)', parent:'render', kind:'seq', h:470,
+  summary:`<p>The current and recommended path. The GAM creative is the Prebid Universal Creative (PUC) and contains no ad, only the bid ID. It is served into a cross-origin SafeFrame, so it can't reach into the page. Instead it uses <code>postMessage</code> to ask Prebid.js for the bid. Prebid.js replies with the ad markup and the creative writes it into its own iframe.</p><p>The ad's code runs inside that cross-origin frame and can't touch the publisher page directly.</p>`,
   lanes:[
     {x:130,t:'GAM',k:'google',
-      info:`<p>GAM picked the Prebid line item and serves its creative, the Prebid Universal Creative, with the <code>%%PATTERN:hb_adid%%</code> macro replaced by the real bid ID. GPT puts it in an iframe, usually a cross-origin SafeFrame.</p>`},
+      info:`<p>GAM picked the Prebid line item and serves its creative, the Prebid Universal Creative, with the <code>%%PATTERN:hb_adid%%</code> macro replaced by the real bid ID. With "Serve into a SafeFrame" on, GPT puts it in a cross-origin iframe.</p>`},
     {x:340,t:'Creative iframe',k:'prebid',
       info:`<p>The Prebid Universal Creative script runs here. It holds no ad of its own. Because a SafeFrame is cross-origin, it can't call <code>window.parent.pbjs</code>, so it sends a <code>postMessage</code> to the page and waits for the reply.</p>`},
     {x:550,t:'Prebid.js on page',k:'prebid',
@@ -351,10 +376,60 @@ puc:{
   nodes:[
     {id:'lk',x:470,y:210,w:160,h:56,t:'Looks up bid',s:'Marks won, bidWon',k:'prebid',
       info:`<p>Prebid.js finds the bid by <code>adId</code> among bids from the auction, warns if it has already rendered, marks it won, and fires the <code>bidWon</code> event (analytics) and the bidder's win notification if it has one.</p>`},
-    {id:'wr',x:260,y:360,w:160,h:56,t:'Writes the ad',s:'SSP B ad appears',k:'prebid',exec:true,
-      info:`<p>The creative writes the markup (or loads the ad URL) inside its iframe. The SSP's impression trackers inside the markup fire. The creative can also ask the page to resize the frame.</p>`}
+    {id:'wr',x:260,y:360,w:160,h:56,t:'Writes the ad',s:'Isolated in the SafeFrame',k:'prebid',exec:true,
+      info:`<p>The creative writes the markup (or loads the ad URL) inside its iframe, and the SSP's impression trackers fire. The ad's scripts run in the SafeFrame's origin: they can't read or change the publisher page, though they can still ask the page to resize the frame through the SafeFrame API.</p>`}
   ],
-  code:[{label:'Current GAM creative (PUC)',body:SNIP.puc},{label:'Legacy creative you may still find',body:SNIP.legacy}]
+  code:[{label:'GAM creative (PUC), served into a SafeFrame',body:SNIP.puc}]
+},
+
+'render-legacy':{
+  title:'Direct call from a friendly iframe (legacy)', parent:'render', kind:'seq', h:470,
+  summary:`<p>The original Prebid creative, from before the universal creative. The line item's creative is served with SafeFrame off, so it lands in a friendly iframe that shares the page's origin. The creative walks up <code>window.parent</code> until it finds <code>pbjs</code> and calls <code>pbjs.renderAd()</code> directly, and Prebid.js writes the ad straight into the iframe's document.</p><p>No messaging and no isolation: the ad's code runs in the publisher's origin and can reach the whole page. You'll still find this creative on older GAM setups.</p>`,
+  lanes:[
+    {x:130,t:'GAM',k:'google',
+      info:`<p>GAM serves the line item's creative with "Serve into a SafeFrame" off, so GPT renders it into a friendly iframe: an iframe the page writes into itself, with the same origin as the page.</p>`},
+    {x:340,t:'Friendly iframe',k:'prebid',
+      info:`<p>Because the frame is same-origin, its script can walk up <code>window.parent</code> until it finds <code>pbjs</code> and call it directly. The legacy creative always does this. Older versions of the Prebid Universal Creative also took this path when they could reach Prebid.js.</p>`},
+    {x:550,t:'Prebid.js on page',k:'prebid',
+      info:`<p><code>pbjs.renderAd(doc, adId)</code> receives the iframe's own <code>document</code> object, looks up the bid, and writes into that document from the page's side.</p>`}
+  ],
+  msgs:[
+    {y:110,from:130,to:340,label:'Serves creative, hb_adid filled'},
+    {y:180,from:340,to:550,label:'parent.pbjs.renderAd(document, id)'},
+    {y:320,from:550,to:340,label:'Writes markup into the iframe'}
+  ],
+  nodes:[
+    {id:'lk',x:470,y:210,w:160,h:56,t:'Looks up bid',s:'Marks won, bidWon',k:'prebid',
+      info:`<p>The same bookkeeping as the postMessage path: find the bid by <code>adId</code>, mark it won, fire <code>bidWon</code> and the bidder's win notification.</p>`},
+    {id:'wr',x:260,y:360,w:160,h:56,t:'Ad runs same-origin',s:'Can reach the page',k:'prebid',exec:true,
+      info:`<p>Prebid.js writes the ad markup straight into the iframe's document (or, for a URL-based bid, inserts an iframe pointing at it). The friendly iframe shares the publisher's origin, so the ad's scripts can read and change <code>window.top</code>: the page's DOM, its non-HttpOnly cookies, other ad slots, and top-level navigation.</p><p>This is the path where a malicious creative can do the most damage, and the reason the Prebid docs recommend serving creatives into SafeFrames.</p>`}
+  ],
+  code:[{label:'Legacy GAM creative (SafeFrame off)',body:SNIP.legacy}]
+},
+
+'render-cache':{
+  title:'Fetch from Prebid Cache (AMP, apps)', parent:'render', kind:'seq', h:470,
+  summary:`<p>When the auction ran in Prebid Server (AMP pages, the Prebid SDK in apps), nothing on the page holds the winning bid. The universal creative gets the cache location from the <code>hb_cache_*</code> keys, downloads the ad markup from Prebid Cache, and writes it into its own frame.</p><p>Instream video also uses Prebid Cache, but through a VAST redirect in the player rather than this creative.</p>`,
+  lanes:[
+    {x:130,t:'Ad server',k:'google',
+      info:`<p>GAM, called from an AMP page or through the Google Mobile Ads SDK, picked the Prebid line item. It serves the universal creative with <code>hb_cache_host</code>, <code>hb_cache_path</code> and <code>hb_cache_id</code> filled in (or the full targeting map).</p>`},
+    {x:340,t:'Creative frame',k:'prebid',
+      info:`<p>The universal creative runs in AMP's cross-origin iframe or in the app's web view. There's no Prebid.js to ask, so it builds the cache URL from the keys instead.</p>`},
+    {x:550,t:'Prebid Cache',k:'prebid',
+      info:`<p>Prebid Server stored the winning bid's markup here during the auction, under the ID that became <code>hb_cache_id</code>. Entries expire after a TTL, so a late render can come back empty.</p>`}
+  ],
+  msgs:[
+    {y:110,from:130,to:340,label:'Serves PUC, cache keys filled'},
+    {y:180,from:340,to:550,label:'GET cache?uuid=hb_cache_id'},
+    {y:320,from:550,to:340,label:'Stored ad markup'}
+  ],
+  nodes:[
+    {id:'lk',x:470,y:210,w:160,h:56,t:'Finds the entry',s:'Saved at auction time',k:'prebid',
+      info:`<p>Prebid Cache looks up the ID and returns the stored markup. Nothing is marked won and no <code>bidWon</code> fires in a browser. Win tracking relies on the tracking URLs in the markup and on Prebid Server's own events.</p>`},
+    {id:'wr',x:260,y:360,w:160,h:56,t:'Writes the ad',s:'AMP frame or web view',k:'prebid',exec:true,
+      info:`<p>The creative writes the markup into its own frame: AMP's cross-origin iframe, or the GMA SDK's web view in an app. No page script is involved, so this is the most isolated path; the ad's own scripts still run inside that frame.</p>`}
+  ],
+  code:[{label:'GAM creative: PUC reading from Prebid Cache',body:SNIP.pucCache}]
 },
 
 amazon:{
@@ -421,7 +496,7 @@ stack:{
       info:`<p>The Amazon price-priority line item for the <code>amznbid</code> code, carrying Amazon's creative. It competes on price with the Prebid line item like any two line items in the same priority.</p>`},
     {id:'ax',x:492,y:356,w:128,h:56,t:'AdX / OB',s:'Dynamic alloc.',k:'google',info:INFO.adx},
     {id:'w',x:220,y:448,w:240,h:44,t:'Highest eligible wins',k:'page',info:INFO.wins},
-    {id:'o1',x:64,y:556,w:176,h:56,t:'Prebid wins',s:'PUC renders',k:'prebid',exec:true,go:'puc'},
+    {id:'o1',x:64,y:556,w:176,h:56,t:'Prebid wins',s:'Creative renders',k:'prebid',exec:true,go:'render'},
     {id:'o2',x:252,y:556,w:176,h:56,t:'Amazon wins',s:'renderImp',k:'amazon',exec:true,go:'amazon'},
     {id:'o3',x:440,y:556,w:176,h:56,t:'GAM wins',s:'Direct or AdX',k:'google',exec:true,info:INFO.gamWins}
   ],
@@ -527,7 +602,7 @@ xandr:{
     dT:'Managed campaigns',dS:'Direct deals',iD:`<p>Direct campaigns managed in Monetize at higher priority than the Prebid line items.</p>`,
     t4:'Prebid line item',s4:'Targets hb_pb=2.50',c4:'prebid',i4:`<p>Price-bucket line items in Monetize, targeting the <code>hb_pb</code> keyword, each carrying the Prebid Universal Creative.</p>`,
     axT:'Monetize demand',axS:'Must beat $2.50',iAx:`<p>Monetize's own SSP demand competes in the same auction.</p>`,
-    t5:'Prebid wins',s5:'PUC via #{HB_ADID}',c5:'prebid',go5:'puc',
+    t5:'Prebid wins',s5:'PUC via #{HB_ADID}',c5:'prebid',go5:'render',
     gwT:'Monetize wins',gwS:'Its own creative serves',iGw:`<p>The Prebid line item lost. Monetize serves its own direct or programmatic creative, and the Prebid bid is never rendered.</p>`}),
   code:[{label:'Page: Prebid keys into AST',body:`pbjs.que.push(function () {
   pbjs.requestBids({
@@ -583,7 +658,7 @@ amp:{
     t3:'amp-ad request to GAM',s3:'hb_pb, hb_cache_id appended',i3:`<p>AMP merges the returned targeting into the GAM ad request, the same way GPT would on a normal page. The AMP runtime waits at most the RTC timeout, then sends the request with or without bids.</p>`,
     t4:'Prebid line item',s4:'Targets hb_pb',i4:`<p>Usually the same price-bucket line items as on the web, as long as their creative can fetch from Prebid Cache (the universal creative handles both).</p>`,
     axS:'Must beat Prebid price',
-    t5:'Prebid wins',s5:'PUC fetches from cache',i5:`<p>With no Prebid.js on the page, the Prebid Universal Creative reads the <code>hb_cache_*</code> keys and downloads the ad markup from Prebid Cache, then writes it. AMP always renders these ads in a cross-origin iframe.</p>`}),
+    t5:'Prebid wins',s5:'PUC fetches from cache',go5:'render-cache'}),
   code:[{label:'amp-ad calling Prebid Server via RTC',body:`<amp-ad width="300" height="250"
   type="doubleclick"
   data-slot="/1234/amp/top"
@@ -610,8 +685,7 @@ app:{
       info:`<p>Price-priority line items per bucket, as on the web. The creative depends on the mode: the universal creative in cache mode for bidding-only, or Prebid's signal creative for Prebid-rendered.</p>`},
     {id:'ax',x:440,y:358,w:160,h:56,t:'AdX / Open Bidding',s:'Must beat Prebid price',k:'google',info:INFO.adx},
     {id:'w',x:220,y:448,w:240,h:44,t:'Highest eligible wins',k:'page',info:INFO.wins},
-    {id:'o1',x:64,y:556,w:176,h:56,t:'Bidding-only',s:'PUC loads from cache',k:'prebid',exec:true,
-      info:`<p>The GAM creative is the Prebid Universal Creative in cache mode. It reads <code>hb_cache_host</code>, <code>hb_cache_path</code> and <code>hb_cache_id</code> and fetches the ad markup from Prebid Cache, then renders it inside the GMA SDK's web view.</p>`},
+    {id:'o1',x:64,y:556,w:176,h:56,t:'Bidding-only',s:'PUC loads from cache',k:'prebid',exec:true,go:'render-cache'},
     {id:'o2',x:252,y:556,w:176,h:56,t:'Prebid-rendered',s:'Prebid SDK renders',k:'app',exec:true,
       info:`<p>The GAM creative is only a signal that the Prebid line item won (it fires a GAM app event). The GMA SDK passes that to the Prebid SDK's event handler, which renders the cached bid with its own renderer: HTML and MRAID in a web view, video natively.</p>`},
     {id:'o3',x:440,y:556,w:176,h:56,t:'GAM demand wins',s:'GMA SDK renders',k:'google',exec:true,info:INFO.gamWins}
@@ -833,6 +907,7 @@ function render(id){
     });
   }
   (d.edges||[]).forEach(e=>{ s+=`<path class="e" d="${edgePath(e,d.nodes)}" marker-end="url(#ar)"/>`; });
+  (d.edges||[]).filter(e=>e.l).forEach(e=>{ s+=`<text class="el" x="${e.lx}" y="${e.ly}" text-anchor="middle" dominant-baseline="central">${esc(e.l)}</text>`; });
   d.nodes.forEach(n=>{ s+=nodeSVG(n); });
   s+='</svg>';
   const cv=document.getElementById('canvas'); cv.innerHTML=s;
@@ -842,7 +917,7 @@ function render(id){
     el.addEventListener('keydown',ev=>{ if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();act();} });
   });
   renderCrumbs(); renderNav(); renderPanel();
-  document.title=d.title+' | Ad decision maps';
+  document.title=d.title+' | Ad serving setups';
 }
 
 /* nodes, sequence lanes (@l<i>) and groups (@g<i>) are all selectable */
