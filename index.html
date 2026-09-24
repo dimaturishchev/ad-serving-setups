@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ad decision maps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --bg:#F2F4F7;--surface:#FFFFFF;--ink:#17202B;--ink2:#4A5563;--ink3:#7A8594;--line:#D5DBE2;--exec:#C0392B;--focus:#185FA5;
+  --prebid-f:#E1F5EE;--prebid-s:#0F6E56;--prebid-t:#085041;--prebid-u:#0F6E56;
+  --gam-f:#F4F3FE;--gam-s:#534AB7;--gam-t:#3C3489;--gam-u:#534AB7;
+  --google-f:#F1EFE8;--google-s:#5F5E5A;--google-t:#2C2C2A;--google-u:#5F5E5A;
+  --amazon-f:#FAEEDA;--amazon-s:#854F0B;--amazon-t:#633806;--amazon-u:#854F0B;
+  --magnite-f:#FAECE7;--magnite-s:#993C1D;--magnite-t:#712B13;--magnite-u:#993C1D;
+  --app-f:#E6F1FB;--app-s:#185FA5;--app-t:#0C447C;--app-u:#185FA5;
+  --video-f:#FBEAF0;--video-s:#993556;--video-t:#72243E;--video-u:#993556;
+  --page-f:#FFFFFF;--page-s:#7A8594;--page-t:#17202B;--page-u:#4A5563;
+  --frame-f:transparent;--frame-s:#AAB3BF;--frame-t:#4A5563;--frame-u:#7A8594;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#12161C;--surface:#1A2029;--ink:#E7ECF2;--ink2:#A9B4C2;--ink3:#7D8896;--line:#2C3643;--exec:#F07167;--focus:#85B7EB;
+  --prebid-f:#0B3D32;--prebid-s:#5DCAA5;--prebid-t:#E1F5EE;--prebid-u:#9FE1CB;
+  --gam-f:#1E1B3A;--gam-s:#7F77DD;--gam-t:#CECBF6;--gam-u:#AFA9EC;
+  --google-f:#2C2C2A;--google-s:#B4B2A9;--google-t:#F1EFE8;--google-u:#D3D1C7;
+  --amazon-f:#4A2E08;--amazon-s:#EF9F27;--amazon-t:#FAEEDA;--amazon-u:#FAC775;
+  --magnite-f:#4A1B0C;--magnite-s:#F0997B;--magnite-t:#FAECE7;--magnite-u:#F5C4B3;
+  --app-f:#0C2E52;--app-s:#85B7EB;--app-t:#E6F1FB;--app-u:#B5D4F4;
+  --video-f:#4B1528;--video-s:#ED93B1;--video-t:#FBEAF0;--video-u:#F4C0D1;
+  --page-f:#1A2029;--page-s:#7D8896;--page-t:#E7ECF2;--page-u:#A9B4C2;
+  --frame-s:#46505E;--frame-t:#A9B4C2;--frame-u:#7D8896;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 24px;padding:18px 28px;border-bottom:1px solid var(--line);background:var(--surface)}
+header h1{font-size:18px;font-weight:500;margin:0;letter-spacing:-0.01em}
+.crumbs{display:flex;flex-wrap:wrap;gap:6px;font-size:14px;color:var(--ink3)}
+.crumbs a{color:var(--ink2);text-decoration:none;border-bottom:1px solid var(--line)}
+.crumbs a:hover{color:var(--ink);border-color:var(--ink3)}
+.crumbs span.cur{color:var(--ink)}
+.layout{display:grid;grid-template-columns:230px minmax(0,1fr) 380px;min-height:calc(100vh - 62px)}
+nav{border-right:1px solid var(--line);padding:18px 14px;font-size:14px}
+nav ul{list-style:none;margin:0;padding:0 0 0 12px}
+nav>ul{padding:0}
+nav li{margin:2px 0}
+nav a{display:block;padding:3px 8px;border-radius:6px;color:var(--ink2);text-decoration:none}
+nav a:hover{background:var(--line);color:var(--ink)}
+nav a.on{background:var(--ink);color:var(--bg)}
+main{padding:24px 28px;display:flex;justify-content:center;align-items:flex-start}
+#canvas{width:100%;max-width:760px}
+#canvas svg{width:100%;height:auto;display:block}
+aside{border-left:1px solid var(--line);background:var(--surface);padding:24px 24px 40px;overflow-wrap:anywhere}
+aside h2{font-size:20px;font-weight:500;margin:0 0 8px;letter-spacing:-0.01em}
+aside h3{font-size:15px;font-weight:500;margin:22px 0 6px}
+aside p{margin:0 0 10px;color:var(--ink2);max-width:62ch}
+aside code{font-family:var(--mono);font-size:12.5px;background:var(--bg);padding:1px 4px;border-radius:4px;color:var(--ink)}
+.sel{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:16px 0;background:var(--bg)}
+.sel h3{margin-top:0}
+.sel .exec{color:var(--exec);font-size:13.5px;margin:6px 0 0}
+.sel.empty{color:var(--ink3);font-size:14px}
+.codeblock{margin:10px 0 16px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.codeblock .bar{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;font-size:13px;color:var(--ink2);background:var(--bg);border-bottom:1px solid var(--line)}
+.codeblock .bar span{padding-right:10px}
+.codeblock button{white-space:nowrap;flex-shrink:0;font:inherit;font-size:12.5px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;padding:2px 10px;cursor:pointer}
+.codeblock button:hover{border-color:var(--ink3)}
+.codeblock pre code{background:none;padding:0;font-size:inherit}
+.codeblock pre{margin:0;padding:12px;overflow-x:auto;font-family:var(--mono);font-size:12px;line-height:1.55;background:var(--surface);color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13px;color:var(--ink2);margin-top:6px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px;border:1px solid}
+.legend i.x{border:1.5px dashed var(--exec);background:transparent}
+.legend i.d{border-radius:50%}
+/* svg */
+svg text{font-family:var(--sans)}
+.n{cursor:default}
+.n.clk{cursor:pointer}
+.n rect.b{fill:var(--f);stroke:var(--s);stroke-width:0.8}
+.n.clk:hover rect.b{stroke-width:1.6}
+.n.on rect.b{stroke-width:2.2}
+.n:focus{outline:none}
+.n:focus-visible rect.b{stroke:var(--focus);stroke-width:2.4}
+.n rect.x{fill:none;stroke:var(--exec);stroke-width:1.4;stroke-dasharray:5 3}
+.tt{font-size:13.5px;font-weight:500;fill:var(--t)}
+.tu{font-size:12px;fill:var(--u)}
+.dr circle{fill:var(--s)}
+.dr path{stroke:var(--f);stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.g rect{fill:var(--f);stroke:var(--s);stroke-width:0.8}
+.g.frame rect{stroke-dasharray:4 4}
+.gl{font-size:13.5px;font-weight:500;fill:var(--t)}
+.e{stroke:var(--ink3);stroke-width:1.2;fill:none}
+.ll{stroke:var(--ink3);stroke-width:0.8;stroke-dasharray:4 4}
+.ml{font-size:12px;fill:var(--ink2)}
+.k-prebid{--f:var(--prebid-f);--s:var(--prebid-s);--t:var(--prebid-t);--u:var(--prebid-u)}
+.k-gam{--f:var(--gam-f);--s:var(--gam-s);--t:var(--gam-t);--u:var(--gam-u)}
+.k-google{--f:var(--google-f);--s:var(--google-s);--t:var(--google-t);--u:var(--google-u)}
+.k-amazon{--f:var(--amazon-f);--s:var(--amazon-s);--t:var(--amazon-t);--u:var(--amazon-u)}
+.k-magnite{--f:var(--magnite-f);--s:var(--magnite-s);--t:var(--magnite-t);--u:var(--magnite-u)}
+.k-app,.k-xandr{--f:var(--app-f);--s:var(--app-s);--t:var(--app-t);--u:var(--app-u)}
+.k-video{--f:var(--video-f);--s:var(--video-s);--t:var(--video-t);--u:var(--video-u)}
+.k-page{--f:var(--page-f);--s:var(--page-s);--t:var(--page-t);--u:var(--page-u)}
+.k-frame{--f:var(--frame-f);--s:var(--frame-s);--t:var(--frame-t);--u:var(--frame-u)}
+@media (max-width:1180px){.layout{grid-template-columns:200px minmax(0,1fr)}aside{grid-column:1/-1;border-left:0;border-top:1px solid var(--line)}}
+@media (max-width:720px){.layout{grid-template-columns:1fr}nav{border-right:0;border-bottom:1px solid var(--line)}main{padding:16px 12px}header{padding:14px 16px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Ad decision maps</h1>
+  <div class="crumbs" id="crumbs"></div>
+</header>
+<div class="layout">
+  <nav id="nav" aria-label="All maps"></nav>
+  <main><div id="canvas"></div></main>
+  <aside id="panel" aria-live="polite"></aside>
+</div>
+
+<script>
+/* ---------- category labels (legend) ---------- */
+const CATS = {
+  prebid:'Prebid', gam:'Ad server', google:"Google's own demand", amazon:'Amazon TAM/UAM',
+  magnite:'Magnite Fastlane', app:'App SDK', xandr:'Microsoft / Xandr', video:'Video player', page:'Page'
+};
+
+/* ---------- reusable snippets ---------- */
+const SNIP = {
+  pbjsGam:`pbjs.que.push(function () {
+  pbjs.addAdUnits(adUnits);
+  pbjs.requestBids({
+    timeout: 1000,
+    bidsBackHandler: function () {
+      googletag.cmd.push(function () {
+        pbjs.setTargetingForGPTAsync();   // hb_pb, hb_bidder, hb_adid ... on the GPT slots
+        googletag.pubads().refresh();     // GAM request now carries the keys
+      });
+    }
+  });
+});`,
+  puc:`<script src="https://cdn.jsdelivr.net/npm/prebid-universal-creative@latest/dist/%%PATTERN:hb_format%%.js"><\/script>
+<script>
+  var ucTagData = {};
+  ucTagData.adServerDomain = "";
+  ucTagData.pubUrl = "%%PATTERN:url%%";
+  ucTagData.targetingMap = %%PATTERN:TARGETINGMAP%%;
+  ucTagData.hbPb = "%%PATTERN:hb_pb%%";
+  ucTagData.hbFormat = "%%PATTERN:hb_format%%";
+  ucTagData.adId = "%%PATTERN:hb_adid%%";
+  try {
+    ucTag.renderAd(document, ucTagData);
+  } catch (e) {
+    console.log(e);
+  }
+<\/script>`,
+  pucCache:`<script src="https://cdn.jsdelivr.net/npm/prebid-universal-creative@latest/dist/%%PATTERN:hb_format%%.js"><\/script>
+<script>
+  var ucTagData = {};
+  ucTagData.adServerDomain = "";
+  ucTagData.pubUrl = "%%PATTERN:url%%";
+  ucTagData.cacheHost = "%%PATTERN:hb_cache_host%%";
+  ucTagData.cachePath = "%%PATTERN:hb_cache_path%%";
+  ucTagData.uuid = "%%PATTERN:hb_cache_id%%";
+  ucTagData.mediaType = "%%PATTERN:hb_format%%";
+  ucTagData.env = "%%PATTERN:hb_env%%";
+  ucTagData.size = "%%PATTERN:hb_size%%";
+  ucTagData.hbPb = "%%PATTERN:hb_pb%%";
+  try { ucTag.renderAd(document, ucTagData); } catch (e) { console.log(e); }
+<\/script>`,
+  legacy:`<script>
+  // Old pre-PUC creative: only works when the iframe is same-origin (no SafeFrame)
+  var w = window;
+  for (var i = 0; i < 10; i++) {
+    w = w.parent;
+    if (w.pbjs) {
+      try { w.pbjs.renderAd(document, '%%PATTERN:hb_adid%%'); break; } catch (e) { continue; }
+    }
+  }
+<\/script>`
+};
+
+/* ---------- template for "one wrapper -> one line item -> GAM-style auction" ---------- */
+function singleFlow(o){
+  const c=o.cat;
+  return {
+    h:630,
+    groups:[{x:60,y:308,w:560,h:208,label:o.server||'Google Ad Manager auction',k:o.serverCat||'gam'}],
+    nodes:[
+      {id:'pg',x:200,y:20,w:280,h:56,t:o.t1,s:o.s1,k:o.c1||c,info:o.i1},
+      {id:'ab',x:200,y:116,w:280,h:56,t:o.t2,s:o.s2,k:o.c2||c,info:o.i2},
+      {id:'kv',x:170,y:212,w:340,h:56,t:o.t3,s:o.s3,k:o.c3||c,info:o.i3},
+      {id:'d',x:80,y:358,w:160,h:56,t:o.dT||'Direct campaigns',s:o.dS||'Guaranteed deals',k:'google',info:o.iD||INFO.direct},
+      {id:'li',x:260,y:358,w:160,h:56,t:o.t4,s:o.s4,k:o.c4||c,info:o.i4},
+      {id:'ax',x:440,y:358,w:160,h:56,t:o.axT||'AdX / Open Bidding',s:o.axS,k:'google',info:o.iAx||INFO.adx},
+      {id:'w',x:220,y:448,w:240,h:44,t:'Highest eligible wins',k:'page',info:INFO.wins},
+      {id:'ow',x:80,y:556,w:240,h:56,t:o.t5,s:o.s5,k:o.c5||c,exec:true,info:o.i5,go:o.go5},
+      {id:'gw',x:360,y:556,w:240,h:56,t:o.gwT||'GAM demand wins',s:o.gwS||'Direct or AdX ad serves',k:'google',exec:true,info:o.iGw||INFO.gamWins}
+    ],
+    edges:[
+      {a:'pg',b:'ab'},{a:'ab',b:'kv'},
+      {p:[[340,268],[340,306]]},
+      {p:[[160,414],[250,446]]},{p:[[340,414],[340,446]]},{p:[[520,414],[430,446]]},
+      {p:[[290,492],[210,554]]},{p:[[390,492],[470,554]]}
+    ]
+  };
+}
+
+const INFO = {
+  direct:`<p>Sponsorship and standard line items sold directly. They sit at higher priority than price-priority line items, so a guaranteed campaign that still needs impressions takes the slot regardless of what header bidding offered.</p>`,
+  adx:`<p>Google's own demand. With dynamic allocation, AdX (and Open Bidding partners, which Google calls server-side in its unified auction) only win if they beat the price of the best eligible remnant line item, which is the header bidding line item here. That is why header bidding raises AdX prices: it sets a real floor.</p>`,
+  wins:`<p>GAM applies line item priority first, then price within the same priority tier. The header bidding line item competes as a price-priority line item at the bucket price it was trafficked at.</p>`,
+  gamWins:`<p>The header bidding line item lost. GAM serves its own creative (a direct campaign creative or an AdX ad). The Prebid/wrapper bid is never rendered, and no win pixel fires for it.</p>`
+};
+
+/* ---------- all diagrams ---------- */
+const D = {
+overview:{
+  title:'Where the ad decision happens', parent:null, h:320,
+  summary:`<p>Every ad slot ends in the same place: an ad server picks a winner and a creative runs somewhere. What differs is who collects bids first, how those bids reach the ad server, and who draws the winning ad.</p><p>Click any box with a round marker to open its map.</p>`,
+  groups:[
+    {x:20,y:20,w:640,h:124,label:'Web pages',k:'frame'},
+    {x:20,y:164,w:310,h:124,label:'Mobile apps',k:'frame'},
+    {x:350,y:164,w:310,h:124,label:'Video',k:'frame'}
+  ],
+  nodes:[
+    {id:'wg',x:40,y:60,w:192,h:64,t:'Publisher + GAM',s:'No header bidding',k:'gam',go:'web-gam'},
+    {id:'wh',x:244,y:60,w:192,h:64,t:'HB + ad server',s:'Prebid, Amazon, Fastlane',k:'prebid',go:'web-hb'},
+    {id:'amp',x:448,y:60,w:192,h:64,t:'AMP pages',s:'RTC to Prebid Server',k:'prebid',
+      info:`<p>AMP pages can't run Prebid.js. Instead, <code>amp-ad</code> uses Real Time Config (RTC) to call Prebid Server before the GAM request. Prebid Server runs the auction, caches the winning creative, and returns targeting keys that AMP appends to the GAM request.</p><p>If the Prebid line item wins, the Prebid Universal Creative fetches the ad from Prebid Cache using <code>hb_cache_id</code>, since there is no Prebid.js on the page to ask. The creative must serve into a SafeFrame.</p>`},
+    {id:'ap',x:40,y:204,w:270,h:64,t:'Prebid SDK + GAM',s:'Bidding-only or Prebid-rendered',k:'app',go:'app'},
+    {id:'vd',x:370,y:204,w:270,h:64,t:'Instream: Prebid + GAM',s:'VAST via Prebid Cache',k:'video',go:'video'}
+  ],
+  edges:[]
+},
+
+'web-gam':{
+  title:'Publisher + GAM, no header bidding', parent:'overview', h:530,
+  summary:`<p>The baseline. The page asks GAM directly and GAM decides among direct campaigns, remnant line items, and Google's own programmatic demand via dynamic allocation. No outside wrapper competes, so AdX only has to beat the remnant line item prices the publisher set.</p>`,
+  groups:[{x:40,y:212,w:600,h:200,label:'GAM ad selection',k:'gam'}],
+  nodes:[
+    {id:'pg',x:200,y:20,w:280,h:56,t:'Page loads GPT',s:'googletag defines slots',k:'page',
+      info:`<p>Google Publisher Tag (GPT) defines ad slots, sizes, and page-level targeting, then sends one request to GAM (single-request mode batches all slots).</p>`},
+    {id:'rq',x:200,y:116,w:280,h:56,t:'Ad request to GAM',s:'Slot, size, key-values',k:'page',
+      info:`<p>The request carries the ad unit path, sizes, page URL, and any custom key-values the publisher set (for example <code>section=sports</code>). Line items can target these.</p>`},
+    {id:'d',x:60,y:258,w:180,h:56,t:'Direct / guaranteed',s:'Sponsorship, standard',k:'google',info:INFO.direct},
+    {id:'rl',x:250,y:258,w:180,h:56,t:'Remnant line items',s:'Price priority, house',k:'google',
+      info:`<p>Price-priority, network, and house line items. With header bidding, this is exactly where the wrapper's line items live.</p>`},
+    {id:'ax',x:440,y:258,w:180,h:56,t:'AdX + Open Bidding',s:'Dynamic allocation',k:'google',info:INFO.adx},
+    {id:'w',x:220,y:346,w:240,h:44,t:'Highest eligible wins',k:'page',info:INFO.wins},
+    {id:'sv',x:200,y:452,w:280,h:56,t:'Winning creative renders',s:'In iframe or SafeFrame',k:'google',exec:true,
+      info:`<p>GAM returns the winning creative, and GPT writes it into the slot, either in a friendly (same-origin) iframe or a cross-origin SafeFrame. Third-party creatives (AdX buyers, third-party tags on direct campaigns) execute their own JavaScript here.</p>`}
+  ],
+  edges:[{a:'pg',b:'rq'},{p:[[340,172],[340,210]]},{p:[[150,314],[260,344]]},{p:[[340,314],[340,344]]},{p:[[530,314],[420,344]]},{p:[[340,390],[340,450]]}],
+  code:[{label:'GPT on the page',body:`googletag.cmd.push(function () {
+  googletag.defineSlot('/1234/homepage/top', [[300, 250]], 'div-top')
+    .addService(googletag.pubads());
+  googletag.pubads().setTargeting('section', 'sports');
+  googletag.pubads().enableSingleRequest();
+  googletag.enableServices();
+  googletag.display('div-top');
+});`}]
+},
+
+'web-hb':{
+  title:'Header bidding + ad server', parent:'overview', h:400,
+  summary:`<p>A wrapper collects bids in the browser (or on a server) before the ad server is called, then passes the best bid to the ad server as key-values. The ad server treats it like one more line item and decides.</p><p>These are the common setups. They differ in who runs the auction, what keys are sent, and what creative renders the winner.</p>`,
+  groups:[{x:20,y:110,w:640,h:270,label:'Common setups',k:'frame'}],
+  nodes:[
+    {id:'pg',x:170,y:20,w:340,h:56,t:'Page runs header bidding',s:'Before calling the ad server',k:'page'},
+    {id:'pgam',x:40,y:150,w:190,h:56,t:'Prebid.js + GAM',s:'Line items on hb_pb',k:'prebid',go:'prebid-gam'},
+    {id:'amz',x:245,y:150,w:190,h:56,t:'Amazon TAM + GAM',s:'apstag, amznbid keys',k:'amazon',go:'amazon'},
+    {id:'fl',x:450,y:150,w:190,h:56,t:'Magnite Fastlane + GAM',s:'Legacy single-SSP tag',k:'magnite',go:'fastlane'},
+    {id:'st',x:40,y:226,w:190,h:56,t:'Prebid + Amazon',s:'Both key sets hit GAM',k:'prebid',go:'stack'},
+    {id:'pbs',x:245,y:226,w:190,h:56,t:'Prebid Server + GAM',s:'Auction runs server-side',k:'prebid',go:'pbs'},
+    {id:'hbt',x:450,y:226,w:190,h:56,t:'GAM HB trafficking',s:'Yield groups, no LIs',k:'gam',go:'hbt'},
+    {id:'xn',x:40,y:302,w:190,h:56,t:'Prebid + Xandr',s:'Monetize as ad server',k:'xandr',go:'xandr'},
+    {id:'ob',x:245,y:302,w:190,h:56,t:'Google Open Bidding',s:'Google-run S2S bidding',k:'google',
+      info:`<p>Google's own server-side alternative. Exchanges bid inside GAM's unified auction; there is no wrapper on the page, no key-values, and no line items. Open Bidding partners appear in the diagrams as part of the "AdX / Open Bidding" box.</p>`}
+  ],
+  edges:[{p:[[340,76],[340,108]]}]
+},
+
+'prebid-gam':{
+  title:'Prebid.js + Google Ad Manager', parent:'web-hb', h:640,
+  summary:`<p>Prebid runs its auction in the browser, then sends the top bid to GAM as key-values. A Prebid line item priced at that bucket enters GAM's normal selection and competes against direct campaigns and AdX. If it wins, its creative asks Prebid.js to draw the cached bid.</p><p>Click <em>Prebid wins</em> to see how the creative renders.</p>`,
+  groups:[{x:60,y:310,w:560,h:208,label:'Google Ad Manager auction',k:'gam'}],
+  nodes:[
+    {id:'pj',x:200,y:20,w:280,h:56,t:'Prebid.js on the page',s:'Asks bidders in parallel',k:'prebid',
+      info:`<p>Prebid.js sends bid requests to each configured bidder adapter in parallel, waits up to the timeout, then picks the highest bid per ad unit (in top-price mode).</p>`},
+    {id:'a',x:90,y:120,w:140,h:44,t:'SSP A: $1.80',k:'prebid',info:`<p>A losing bid. In top-price mode only the winner's keys go to GAM; in send-all-bids mode every bidder's keys are sent with a bidder suffix (<code>hb_pb_bidderA</code>).</p>`},
+    {id:'b',x:270,y:120,w:140,h:44,t:'SSP B: $2.50',k:'prebid',info:`<p>The top bid. Prebid keeps its ad markup in memory (or in Prebid Cache) and assigns it an <code>adId</code>, which becomes <code>hb_adid</code>.</p>`},
+    {id:'c',x:450,y:120,w:140,h:44,t:'SSP C: $0.90',k:'prebid',info:`<p>A losing bid. It is never rendered.</p>`},
+    {id:'kv',x:170,y:210,w:340,h:56,t:'GPT ad request to GAM',s:'hb_pb=2.50 · hb_bidder=B',k:'prebid',
+      info:`<p><code>pbjs.setTargetingForGPTAsync()</code> sets key-values on the GPT slots. The main ones: <code>hb_pb</code> (price bucket, used for line item targeting), <code>hb_adid</code> (bid ID, used for rendering), <code>hb_bidder</code> (reporting), <code>hb_format</code> and <code>hb_size</code>.</p>`},
+    {id:'d',x:80,y:360,w:160,h:56,t:'Direct campaigns',s:'Guaranteed deals',k:'google',info:INFO.direct},
+    {id:'li',x:260,y:360,w:160,h:56,t:'Prebid line item',s:'Targets hb_pb=2.50',k:'prebid',
+      info:`<p>One price-priority line item per price bucket (0.10, 0.20 ... 2.50 ...), each targeting <code>hb_pb</code> with the exact string format Prebid sends (for example <code>2.50</code>, not <code>2.5</code>). Each line item carries the Prebid Universal Creative.</p>`},
+    {id:'ax',x:440,y:360,w:160,h:56,t:'AdX / Open Bidding',s:'Must beat $2.50',k:'google',info:INFO.adx},
+    {id:'w',x:220,y:450,w:240,h:44,t:'Highest eligible wins',k:'page',info:INFO.wins},
+    {id:'pw',x:80,y:560,w:240,h:56,t:'Prebid wins',s:'Creative renders SSP B ad',k:'prebid',go:'puc',exec:true},
+    {id:'gw',x:360,y:560,w:240,h:56,t:'GAM demand wins',s:'Direct or AdX ad serves',k:'google',exec:true,info:INFO.gamWins}
+  ],
+  edges:[
+    {p:[[300,76],[175,118]]},{p:[[340,76],[340,118]]},{p:[[380,76],[505,118]]},
+    {p:[[175,164],[270,208]]},{p:[[340,164],[340,208]]},{p:[[505,164],[410,208]]},
+    {p:[[340,266],[340,306]]},
+    {p:[[160,416],[250,448]]},{p:[[340,416],[340,448]]},{p:[[520,416],[430,448]]},
+    {p:[[290,494],[210,556]]},{p:[[390,494],[470,556]]}
+  ],
+  code:[{label:'Page: send Prebid keys to GAM',body:SNIP.pbjsGam},{label:'GAM creative on each Prebid line item',body:SNIP.puc}]
+},
+
+puc:{
+  title:'How the Prebid Universal Creative renders', parent:'prebid-gam', kind:'seq', h:470,
+  summary:`<p>The GAM creative contains no ad, only the bid ID. It uses <code>postMessage</code> to ask Prebid.js on the page for that bid, because the iframe is often a cross-origin SafeFrame and can't reach into the page. Prebid.js replies with the ad markup and the creative writes it into its own iframe.</p><p>With no Prebid.js on the page (AMP, apps), the creative instead fetches the ad from Prebid Cache using the <code>hb_cache_*</code> keys.</p>`,
+  lanes:[{x:130,t:'GAM',k:'google'},{x:340,t:'Creative iframe',k:'prebid'},{x:550,t:'Prebid.js on page',k:'prebid'}],
+  msgs:[
+    {y:110,from:130,to:340,label:'Serves PUC, hb_adid filled'},
+    {y:180,from:340,to:550,label:'postMessage: render 3f9a1c'},
+    {y:320,from:550,to:340,label:'postMessage: ad markup'}
+  ],
+  nodes:[
+    {id:'lk',x:470,y:210,w:160,h:56,t:'Looks up bid',s:'Marks won, bidWon',k:'prebid',
+      info:`<p>Prebid.js finds the bid by <code>adId</code> among bids from the auction, checks it hasn't already rendered, marks it won, fires the <code>bidWon</code> event (analytics) and the bidder's win URL if any.</p>`},
+    {id:'wr',x:260,y:360,w:160,h:56,t:'Writes the ad',s:'SSP B ad appears',k:'prebid',exec:true,
+      info:`<p>The creative writes the markup (or loads the ad URL) inside its iframe. The SSP's impression trackers inside the markup fire. The creative can also ask the page to resize the frame.</p>`}
+  ],
+  code:[{label:'Current GAM creative (PUC)',body:SNIP.puc},{label:'Legacy creative you may still find',body:SNIP.legacy}]
+},
+
+amazon:{
+  title:'Amazon TAM/UAM + GAM', parent:'web-hb',
+  summary:`<p>Amazon's wrapper (<code>apstag</code>) fetches Amazon demand (TAM) or Amazon plus other SSPs (UAM) and returns the price as an opaque bucket code, not a dollar value. Amazon gives publishers a price mapping so they can build line items per bucket. The pattern after that is the same as Prebid: a line item enters GAM, and its creative asks <code>apstag</code> to render.</p>`,
+  ...singleFlow({cat:'amazon',
+    t1:'Page calls fetchBids',s1:'apstag, Amazon demand',i1:`<p><code>apstag.init()</code> then <code>apstag.fetchBids()</code> with the slots and a timeout.</p>`,
+    t2:'Amazon returns a bid',s2:'Price as encoded bucket',i2:`<p>The bid price is encoded (for example <code>amznbid=1d4n7k</code>) so the price isn't exposed in the page. The mapping from codes to prices comes from Amazon's portal.</p>`,
+    t3:'GPT ad request to GAM',s3:'amznbid, amzniid keys',i3:`<p><code>apstag.setDisplayBids()</code> sets <code>amznbid</code> (encoded price), <code>amzniid</code> (impression ID, used for rendering), <code>amznsz</code> (size) and <code>amznp</code> on the GPT slots.</p>`,
+    t4:'Amazon line item',s4:'Targets amznbid bucket',i4:`<p>Price-priority line items, each targeting the <code>amznbid</code> codes that map to its price.</p>`,
+    axS:'Must beat Amazon price',
+    t5:'Amazon wins',s5:'apstag.renderImp draws ad',i5:`<p>The line item's creative calls <code>apstag.renderImp(document, amzniid)</code>. As with Prebid, the creative is a pointer: <code>apstag</code> holds the ad and writes it into the frame. Amazon's SafeFrame-compatible creative loads its own helper script to do this across origins.</p>`}),
+  code:[{label:'Page: Amazon bids into GAM',body:`apstag.init({ pubID: 'YOUR_PUB_ID', adServer: 'googletag' });
+
+apstag.fetchBids({
+  slots: [{ slotID: 'div-top', slotName: '/1234/homepage/top', sizes: [[300, 250]] }],
+  timeout: 1000
+}, function (bids) {
+  googletag.cmd.push(function () {
+    apstag.setDisplayBids();          // amznbid, amzniid ... on the GPT slots
+    googletag.pubads().refresh();
+  });
+});`},{label:'Shape of the GAM creative (copy the exact one from Amazon\u2019s portal)',body:`<script>
+  // Indicative only. Amazon provides the exact creative, including a
+  // SafeFrame-compatible version that loads its own render helper.
+  apstag.renderImp(document, '%%PATTERN:amzniid%%');
+<\/script>`}]
+},
+
+fastlane:{
+  title:'Magnite (Rubicon) Fastlane + GAM', parent:'web-hb',
+  summary:`<p>Fastlane was Rubicon Project's (now Magnite's) own header tag from before wrappers like Prebid took over. One SSP, many buyers behind it. It passes price tiers to GAM as key-values, and matching line items carry a creative that asks the Fastlane tag on the page to render.</p><p>It's mostly legacy now: Magnite demand is usually accessed through Prebid's <code>rubicon</code> adapter. You may still find it on older sites.</p>`,
+  ...singleFlow({cat:'magnite',
+    t1:'Page loads rubicontag',s1:'Magnite Fastlane tag',i1:`<p>The Fastlane library defines slots matching the GPT slots and requests bids from Magnite.</p>`,
+    t2:'Magnite returns bids',s2:'Mapped to price tiers',i2:`<p>Bids come back already bucketed into tiers rather than exact prices.</p>`,
+    t3:'GPT ad request to GAM',s3:'rpfl_* tier keys',i3:`<p>Keys are named per site/account (for example <code>rpfl_&lt;id&gt;</code>) with values combining a size ID and tier (for example <code>15_tier0250</code>). Check the exact naming in Magnite's documentation for the account.</p>`,
+    t4:'Fastlane line item',s4:'Targets tier value',i4:`<p>One price-priority line item per tier, targeting the tier values.</p>`,
+    axS:'Must beat the tier',
+    t5:'Magnite wins',s5:'rubicontag renders ad',i5:`<p>The creative calls back into the Fastlane tag on the parent page to render the cached Magnite ad, the same pointer pattern as Prebid's legacy creative.</p>`})
+},
+
+stack:{
+  title:'Prebid + Amazon together', parent:'web-hb', h:630,
+  summary:`<p>The most common real-world setup on larger sites. Both wrappers run in parallel, the page waits for both (or a shared timeout), and one GAM request carries both key sets. GAM then has two header bidding line items competing with direct and AdX.</p>`,
+  groups:[{x:40,y:308,w:600,h:208,label:'Google Ad Manager auction',k:'gam'}],
+  nodes:[
+    {id:'pg',x:170,y:20,w:340,h:56,t:'Page starts both auctions',s:'Prebid.js and apstag',k:'page'},
+    {id:'pb',x:60,y:116,w:260,h:56,t:'Prebid auction',s:'Top bid $2.50',k:'prebid',go:'prebid-gam'},
+    {id:'am',x:360,y:116,w:260,h:56,t:'Amazon auction',s:'Encoded bucket',k:'amazon',go:'amazon'},
+    {id:'kv',x:170,y:212,w:340,h:56,t:'One GPT request',s:'hb_pb and amznbid keys',k:'page',
+      info:`<p>Both <code>pbjs.setTargetingForGPTAsync()</code> and <code>apstag.setDisplayBids()</code> run before a single <code>refresh()</code>, so GAM sees both sets of keys at once.</p>`},
+    {id:'d',x:60,y:356,w:128,h:56,t:'Direct',s:'Guaranteed',k:'google',info:INFO.direct},
+    {id:'pl',x:204,y:356,w:128,h:56,t:'Prebid LI',s:'hb_pb=2.50',k:'prebid'},
+    {id:'al',x:348,y:356,w:128,h:56,t:'Amazon LI',s:'amznbid bucket',k:'amazon'},
+    {id:'ax',x:492,y:356,w:128,h:56,t:'AdX / OB',s:'Dynamic alloc.',k:'google',info:INFO.adx},
+    {id:'w',x:220,y:448,w:240,h:44,t:'Highest eligible wins',k:'page',info:INFO.wins},
+    {id:'o1',x:64,y:556,w:176,h:56,t:'Prebid wins',s:'PUC renders',k:'prebid',exec:true,go:'puc'},
+    {id:'o2',x:252,y:556,w:176,h:56,t:'Amazon wins',s:'renderImp',k:'amazon',exec:true,go:'amazon'},
+    {id:'o3',x:440,y:556,w:176,h:56,t:'GAM wins',s:'Direct or AdX',k:'google',exec:true,info:INFO.gamWins}
+  ],
+  edges:[
+    {p:[[300,76],[190,114]]},{p:[[380,76],[490,114]]},
+    {p:[[190,172],[290,210]]},{p:[[490,172],[390,210]]},
+    {p:[[340,268],[340,306]]},
+    {p:[[124,412],[250,446]]},{p:[[268,412],[320,446]]},{p:[[412,412],[360,446]]},{p:[[556,412],[430,446]]},
+    {p:[[270,492],[152,554]]},{p:[[340,492],[340,554]]},{p:[[410,492],[528,554]]}
+  ],
+  code:[{label:'Page: wait for both, then one GAM request',body:`var done = { prebid: false, aps: false };
+function sendToGam() {
+  if (!done.prebid || !done.aps) return;
+  googletag.cmd.push(function () { googletag.pubads().refresh(); });
+}
+
+apstag.fetchBids({ slots: apsSlots, timeout: 1000 }, function () {
+  googletag.cmd.push(function () {
+    apstag.setDisplayBids();
+    done.aps = true; sendToGam();
+  });
+});
+
+pbjs.que.push(function () {
+  pbjs.requestBids({
+    timeout: 1000,
+    bidsBackHandler: function () {
+      googletag.cmd.push(function () {
+        pbjs.setTargetingForGPTAsync();
+        done.prebid = true; sendToGam();
+      });
+    }
+  });
+});
+// Production code also adds a hard failsafe timer that calls refresh() anyway.`}]
+},
+
+pbs:{
+  title:'Prebid Server + GAM', parent:'web-hb', h:570,
+  summary:`<p>Same GAM side as client-side Prebid, but the bidder calls happen on a server. Prebid.js makes one request to Prebid Server, which calls the SSPs server-to-server, caches the creatives, and returns bids with cache IDs. The page then sends the usual keys to GAM.</p><p>Fewer browser requests and lower page latency; the trade-off is weaker user matching because SSPs can't read their own cookies directly.</p>`,
+  nodes:[
+    {id:'pj',x:200,y:20,w:280,h:56,t:'Prebid.js on the page',s:'s2sConfig enabled',k:'prebid'},
+    {id:'ps',x:200,y:116,w:280,h:56,t:'Prebid Server',s:'One call, fans out',k:'prebid',
+      info:`<p>Receives an OpenRTB request from Prebid.js, calls the configured bidders server-side, and stores winning creatives in Prebid Cache.</p>`},
+    {id:'a',x:90,y:212,w:140,h:44,t:'SSP A',k:'prebid'},
+    {id:'b',x:270,y:212,w:140,h:44,t:'SSP B',k:'prebid'},
+    {id:'c',x:450,y:212,w:140,h:44,t:'SSP C',k:'prebid'},
+    {id:'bk',x:170,y:296,w:340,h:56,t:'Bids back to the page',s:'Creatives in Prebid Cache',k:'prebid'},
+    {id:'kv',x:170,y:392,w:340,h:56,t:'GPT ad request to GAM',s:'hb_pb, hb_cache_id keys',k:'prebid'},
+    {id:'gm',x:200,y:488,w:280,h:56,t:'Same GAM auction',s:'As in Prebid + GAM',k:'gam',go:'prebid-gam'}
+  ],
+  edges:[
+    {a:'pj',b:'ps'},
+    {p:[[300,172],[175,210]]},{p:[[340,172],[340,210]]},{p:[[380,172],[505,210]]},
+    {p:[[160,256],[260,294]]},{p:[[340,256],[340,294]]},{p:[[520,256],[420,294]]},
+    {a:'bk',b:'kv'},{a:'kv',b:'gm'}
+  ],
+  code:[{label:'Page: route bidders through Prebid Server',body:`pbjs.setConfig({
+  s2sConfig: [{
+    accountId: 'YOUR_ACCOUNT_ID',
+    enabled: true,
+    bidders: ['bidderA', 'bidderB', 'bidderC'],
+    timeout: 500,
+    endpoint: 'https://prebid-server.example.com/openrtb2/auction',
+    syncEndpoint: 'https://prebid-server.example.com/cookie_sync'
+  }]
+});`}]
+},
+
+hbt:{
+  title:'GAM header bidding trafficking', parent:'web-hb', h:540,
+  summary:`<p>Google's newer native integration for Prebid. Instead of hundreds of price-bucket line items, the publisher maps Prebid bidders to yield group partners. GAM reads the bid from the key-values and places it directly in its unified auction with the exact price, not a bucket. Prebid's docs note it also removes the need for header bidding creatives.</p>`,
+  groups:[{x:60,y:212,w:560,h:208,label:'GAM unified auction',k:'gam'}],
+  nodes:[
+    {id:'pj',x:200,y:20,w:280,h:56,t:'Prebid.js on the page',s:'Auction as usual',k:'prebid'},
+    {id:'kv',x:170,y:116,w:340,h:56,t:'GPT ad request to GAM',s:'hb_pb, hb_bidder keys',k:'prebid'},
+    {id:'d',x:80,y:262,w:160,h:56,t:'Direct campaigns',s:'Guaranteed deals',k:'google',info:INFO.direct},
+    {id:'yg',x:260,y:262,w:160,h:56,t:'Yield group',s:'Bidder = hb_bidder',k:'prebid',
+      info:`<p>Each Prebid bidder is set up as a header bidding partner in a yield group, the same interface used for Open Bidding. No line items, and reporting shows the Demand Channel as "Header bidding".</p>`},
+    {id:'ax',x:440,y:262,w:160,h:56,t:'AdX / Open Bidding',s:'Same auction',k:'google',info:INFO.adx},
+    {id:'w',x:220,y:352,w:240,h:44,t:'Highest bid wins',k:'page',info:INFO.wins},
+    {id:'o',x:80,y:460,w:240,h:56,t:'Prebid bidder wins',s:'No HB creatives needed',k:'prebid',exec:true},
+    {id:'gw',x:360,y:460,w:240,h:56,t:'GAM demand wins',s:'Direct or AdX',k:'google',exec:true,info:INFO.gamWins}
+  ],
+  edges:[{a:'pj',b:'kv'},{p:[[340,172],[340,210]]},{p:[[160,318],[250,350]]},{p:[[340,318],[340,350]]},{p:[[520,318],[430,350]]},{p:[[290,396],[210,458]]},{p:[[390,396],[470,458]]}]
+},
+
+xandr:{
+  title:'Prebid + Microsoft (Xandr) Monetize ad server', parent:'web-hb',
+  summary:`<p>The same pattern with a non-Google ad server. Prebid sends keys to Monetize via the AST tag as keywords, Monetize line items target <code>hb_pb</code>, and the creative is the same Prebid Universal Creative with Monetize's <code>#{...}</code> macros instead of GAM's <code>%%PATTERN:...%%</code>.</p><p>Microsoft has been retiring parts of the Xandr stack; check current product status for your account.</p>`,
+  ...singleFlow({cat:'xandr',server:'Monetize ad server auction',serverCat:'xandr',
+    t1:'Prebid.js on the page',s1:'Asks bidders in parallel',c1:'prebid',
+    t2:'Top bid picked',s2:'hb_pb=2.50, hb_adid',c2:'prebid',
+    t3:'AST ad request',s3:'Keys sent as keywords',i3:`<p>The Xandr AST tag (<code>apntag</code>) passes Prebid's keys as keywords on the ad request.</p>`,
+    dT:'Managed campaigns',dS:'Direct deals',iD:`<p>Direct campaigns managed in Monetize at higher priority.</p>`,
+    t4:'Prebid line item',s4:'Targets hb_pb=2.50',c4:'prebid',
+    axT:'Monetize demand',axS:'Must beat $2.50',iAx:`<p>Monetize's own SSP demand competes in the same auction.</p>`,
+    t5:'Prebid wins',s5:'PUC via #{HB_ADID}',c5:'prebid',go5:'puc',
+    gwT:'Monetize wins',gwS:'Its own creative serves',iGw:INFO.gamWins}),
+  code:[{label:'Monetize creative (shape; see Prebid docs for the full snippet)',body:`<script src="https://cdn.jsdelivr.net/npm/prebid-universal-creative@#{HB_VER}/dist/#{HB_FORMAT}.js"><\/script>
+<script>
+  var ucTagData = {};
+  ucTagData.adServerDomain = window.location.host;
+  ucTagData.pubUrl = "\${REFERER_URL_ENC}";
+  ucTagData.adId = "#{HB_ADID}";
+  try { ucTag.renderAd(document, ucTagData); } catch (e) { console.log(e); }
+<\/script>`}]
+},
+
+app:{
+  title:'Mobile app: Prebid SDK + GAM', parent:'overview', h:630,
+  summary:`<p>In apps, the Prebid SDK asks Prebid Server for bids, then hands keywords to the Google Mobile Ads (GMA) SDK, which calls GAM. GAM decides the same way as on the web. What differs is rendering, and there are two modes.</p><p><em>Bidding-only</em>: GAM serves the Prebid Universal Creative, which fetches the ad from Prebid Cache. <em>Prebid-rendered</em>: GAM serves only a signal, and the Prebid SDK renders the ad itself (with Open Measurement and SKAdNetwork support).</p><p>With AdMob or AppLovin MAX mediation, the Prebid bid enters the mediation waterfall or auction instead of GAM line items.</p>`,
+  groups:[{x:60,y:308,w:560,h:208,label:'Google Ad Manager auction',k:'gam'}],
+  nodes:[
+    {id:'ap',x:200,y:20,w:280,h:56,t:'App requests an ad',s:'Prebid SDK goes first',k:'app'},
+    {id:'ps',x:200,y:116,w:280,h:56,t:'Prebid Server auction',s:'Bids cached, keywords back',k:'prebid'},
+    {id:'kv',x:170,y:212,w:340,h:56,t:'GMA SDK request to GAM',s:'hb_pb, hb_cache_id keywords',k:'app'},
+    {id:'d',x:80,y:358,w:160,h:56,t:'Direct campaigns',s:'Guaranteed deals',k:'google',info:INFO.direct},
+    {id:'li',x:260,y:358,w:160,h:56,t:'Prebid line item',s:'Targets hb_pb',k:'prebid'},
+    {id:'ax',x:440,y:358,w:160,h:56,t:'AdX / Open Bidding',s:'Must beat Prebid price',k:'google',info:INFO.adx},
+    {id:'w',x:220,y:448,w:240,h:44,t:'Highest eligible wins',k:'page',info:INFO.wins},
+    {id:'o1',x:64,y:556,w:176,h:56,t:'Bidding-only',s:'PUC loads from cache',k:'prebid',exec:true,
+      info:`<p>The GAM creative is the Prebid Universal Creative in cache mode. It reads <code>hb_cache_host</code>, <code>hb_cache_path</code> and <code>hb_cache_id</code> and fetches the ad markup from Prebid Cache, then renders it inside the GMA SDK's web view.</p>`},
+    {id:'o2',x:252,y:556,w:176,h:56,t:'Prebid-rendered',s:'Prebid SDK renders',k:'app',exec:true,
+      info:`<p>The GAM creative is only a signal that the Prebid line item won. The GMA SDK passes that signal to the Prebid SDK, which renders the cached bid with its own renderer.</p>`},
+    {id:'o3',x:440,y:556,w:176,h:56,t:'GAM demand wins',s:'GMA SDK renders',k:'google',exec:true,info:INFO.gamWins}
+  ],
+  edges:[
+    {a:'ap',b:'ps'},{a:'ps',b:'kv'},{p:[[340,268],[340,306]]},
+    {p:[[160,414],[250,446]]},{p:[[340,414],[340,446]]},{p:[[520,414],[430,446]]},
+    {p:[[270,492],[150,554]]},{p:[[340,492],[340,554]]},{p:[[410,492],[530,554]]}
+  ],
+  code:[{label:'GAM creative for bidding-only mode (PUC reads from Prebid Cache)',body:SNIP.pucCache}]
+},
+
+video:{
+  title:'Instream video: Prebid + GAM', parent:'overview', h:630,
+  summary:`<p>Video bids are VAST, not HTML, so they're stored in Prebid Cache first. Prebid then builds a GAM VAST tag URL carrying the keys in <code>cust_params</code>. The player calls GAM, and if the Prebid video line item wins, its creative is a VAST redirect pointing at the cached VAST.</p><p>Outstream video works like banner instead: the Prebid Universal Creative renders it with an outstream renderer.</p>`,
+  groups:[{x:60,y:308,w:560,h:208,label:'Google Ad Manager auction',k:'gam'}],
+  nodes:[
+    {id:'pl',x:200,y:20,w:280,h:56,t:'Player needs a preroll',s:'Instream ad break',k:'video'},
+    {id:'pj',x:60,y:116,w:260,h:56,t:'Prebid video auction',s:'Bids return VAST',k:'prebid'},
+    {id:'ca',x:360,y:116,w:260,h:56,t:'Prebid Cache',s:'Stores VAST, returns ID',k:'prebid',
+      info:`<p>Each video bid's VAST XML is stored server-side and mapped to a cache ID (<code>hb_uuid</code> / <code>hb_cache_id</code>). Some bidders cache it themselves before responding.</p>`},
+    {id:'url',x:170,y:212,w:340,h:56,t:'GAM VAST tag URL',s:'cust_params: hb_pb, hb_uuid',k:'video',
+      info:`<p><code>pbjs.adServers.dfp.buildVideoUrl()</code> returns a GAM video ad tag URL with Prebid keys URL-encoded in <code>cust_params</code>. The player requests this URL.</p>`},
+    {id:'d',x:80,y:358,w:160,h:56,t:'Direct video',s:'Guaranteed deals',k:'google',info:INFO.direct},
+    {id:'li',x:260,y:358,w:160,h:56,t:'Prebid video LI',s:'Targets hb_pb',k:'prebid'},
+    {id:'ax',x:440,y:358,w:160,h:56,t:'AdX video',s:'Must beat Prebid price',k:'google',info:INFO.adx},
+    {id:'w',x:220,y:448,w:240,h:44,t:'Highest eligible wins',k:'page',info:INFO.wins},
+    {id:'o1',x:80,y:556,w:240,h:56,t:'Prebid wins',s:'VAST redirect to cache',k:'prebid',exec:true,
+      info:`<p>GAM returns a VAST wrapper whose redirect URL points at Prebid Cache with the cache ID filled in. The player follows it, gets the bidder's VAST, and plays the media. Any JavaScript in the VAST (VPAID, verification scripts) runs in the player's context.</p>`},
+    {id:'o2',x:360,y:556,w:240,h:56,t:'GAM demand wins',s:'GAM VAST plays',k:'google',exec:true,info:INFO.gamWins}
+  ],
+  edges:[
+    {p:[[300,76],[190,114]]},{p:[[320,144],[358,144]]},{p:[[190,172],[290,210]]},
+    {p:[[340,268],[340,306]]},
+    {p:[[160,414],[250,446]]},{p:[[340,414],[340,446]]},{p:[[520,414],[430,446]]},
+    {p:[[290,492],[210,554]]},{p:[[390,492],[470,554]]}
+  ],
+  code:[{label:'Page: build the GAM VAST URL',body:`pbjs.que.push(function () {
+  pbjs.addAdUnits(videoAdUnit);
+  pbjs.requestBids({
+    bidsBackHandler: function () {
+      var vastUrl = pbjs.adServers.dfp.buildVideoUrl({
+        adUnit: videoAdUnit,
+        params: { iu: '/1234/video', output: 'vast' }
+      });
+      player.playAd(vastUrl);   // your player's ad API
+    }
+  });
+});`},{label:'GAM creative: VAST redirect URL (use your cache host)',body:`https://prebid.adnxs.com/pbc/v1/cache?uuid=%%PATTERN:hb_uuid%%`}]
+}
+};
+
+/* ---------- rendering ---------- */
+const NS='http://www.w3.org/2000/svg';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let current=null, selected=null;
+
+function edgePath(e,nodes){
+  let pts=e.p;
+  if(!pts){
+    const a=nodes.find(n=>n.id===e.a), b=nodes.find(n=>n.id===e.b);
+    if(b.y>=a.y+a.h-1) pts=[[a.x+a.w/2+(e.ao||0),a.y+a.h],[b.x+b.w/2+(e.bo||0),b.y-2]];
+    else if(b.x>a.x) pts=[[a.x+a.w,a.y+a.h/2],[b.x-2,b.y+b.h/2]];
+    else pts=[[a.x,a.y+a.h/2],[b.x+b.w+2,b.y+b.h/2]];
+  }
+  return 'M'+pts.map(p=>p.join(' ')).join(' L');
+}
+
+function nodeSVG(n){
+  const cx=n.x+n.w/2, cy=n.y+n.h/2, clk=!!(n.go||n.info);
+  let s=`<g class="n k-${n.k}${clk?' clk':''}" data-id="${n.id}" ${clk?'tabindex="0" role="button"':''} aria-label="${esc(n.t)}${n.go?' (open map)':''}">`;
+  if(n.exec) s+=`<rect class="x" x="${n.x-4}" y="${n.y-4}" width="${n.w+8}" height="${n.h+8}" rx="10"/>`;
+  s+=`<rect class="b" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="8"/>`;
+  if(n.s){
+    s+=`<text class="tt" x="${cx}" y="${cy-10}" text-anchor="middle" dominant-baseline="central">${esc(n.t)}</text>`;
+    s+=`<text class="tu" x="${cx}" y="${cy+10}" text-anchor="middle" dominant-baseline="central">${esc(n.s)}</text>`;
+  } else s+=`<text class="tt" x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central">${esc(n.t)}</text>`;
+  if(n.go){
+    const bx=n.x+n.w-11, by=n.y+11;
+    s+=`<g class="dr"><circle cx="${bx}" cy="${by}" r="7"/><path d="M${bx-2} ${by-3} L${bx+1.5} ${by} L${bx-2} ${by+3}"/></g>`;
+  }
+  return s+'</g>';
+}
+
+function render(id){
+  const d=D[id]; if(!d){location.hash='#overview';return;}
+  current=id; selected=null;
+  let s=`<svg viewBox="0 0 680 ${d.h}" role="img" aria-labelledby="svgt"><title id="svgt">${esc(d.title)}</title>`;
+  s+=`<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="var(--ink3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>`;
+  (d.groups||[]).forEach(g=>{
+    s+=`<g class="g k-${g.k}${g.k==='frame'?' frame':''}"><rect x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" rx="14"/>`;
+    s+= g.k==='frame' ? `<text class="gl" x="${g.x+16}" y="${g.y+22}">${esc(g.label)}</text>` : `<text class="gl" x="${g.x+g.w/2}" y="${g.y+24}" text-anchor="middle">${esc(g.label)}</text>`;
+    s+='</g>';
+  });
+  if(d.kind==='seq'){
+    d.lanes.forEach(l=>{
+      s+=`<line class="ll" x1="${l.x}" y1="64" x2="${l.x}" y2="${d.h-20}"/>`;
+      s+=nodeSVG({id:'lane'+l.x,x:l.x-80,y:20,w:160,h:44,t:l.t,k:l.k});
+    });
+    d.msgs.forEach(m=>{
+      const dir=m.to>m.from?1:-1;
+      s+=`<text class="ml" x="${(m.from+m.to)/2}" y="${m.y-12}" text-anchor="middle">${esc(m.label)}</text>`;
+      s+=`<line class="e" x1="${m.from+2*dir}" y1="${m.y}" x2="${m.to-4*dir}" y2="${m.y}" marker-end="url(#ar)"/>`;
+    });
+  }
+  (d.edges||[]).forEach(e=>{ s+=`<path class="e" d="${edgePath(e,d.nodes)}" marker-end="url(#ar)"/>`; });
+  d.nodes.forEach(n=>{ s+=nodeSVG(n); });
+  s+='</svg>';
+  const cv=document.getElementById('canvas'); cv.innerHTML=s;
+  cv.querySelectorAll('.n.clk').forEach(el=>{
+    const act=()=>activate(el.dataset.id);
+    el.addEventListener('click',act);
+    el.addEventListener('keydown',ev=>{ if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();act();} });
+  });
+  renderCrumbs(); renderNav(); renderPanel();
+  document.title=d.title+' | Ad decision maps';
+}
+
+function activate(nid){
+  const n=D[current].nodes.find(x=>x.id===nid); if(!n) return;
+  if(n.go){ location.hash='#'+n.go; return; }
+  selected=nid;
+  document.querySelectorAll('#canvas .n').forEach(el=>el.classList.toggle('on',el.dataset.id===nid));
+  renderPanel();
+}
+
+function chain(id){ const c=[]; while(id){ c.unshift(id); id=D[id].parent; } return c; }
+
+function renderCrumbs(){
+  const c=chain(current);
+  document.getElementById('crumbs').innerHTML=c.map((id,i)=> i===c.length-1
+    ? `<span class="cur">${esc(D[id].title)}</span>`
+    : `<a href="#${id}">${esc(D[id].title)}</a><span aria-hidden="true">/</span>`).join(' ');
+}
+
+function renderNav(){
+  const kids=p=>Object.keys(D).filter(k=>D[k].parent===p);
+  const tree=p=>{ const k=kids(p); if(!k.length) return '';
+    return '<ul>'+k.map(id=>`<li><a href="#${id}" class="${id===current?'on':''}">${esc(D[id].title)}</a>${tree(id)}</li>`).join('')+'</ul>'; };
+  document.getElementById('nav').innerHTML=`<ul><li><a href="#overview" class="${current==='overview'?'on':''}">${esc(D.overview.title)}</a>${tree('overview')}</li></ul>`;
+}
+
+function renderPanel(){
+  const d=D[current];
+  let h=`<h2>${esc(d.title)}</h2>${d.summary||''}`;
+  const n=selected && d.nodes.find(x=>x.id===selected);
+  if(n){
+    h+=`<div class="sel"><h3>${esc(n.t)}</h3>${n.info||''}${n.exec?'<p class="exec">Third-party creative code executes here.</p>':''}</div>`;
+  } else {
+    h+=`<div class="sel empty">Click a box to see what happens at that step. Boxes with a round marker open a deeper map.</div>`;
+  }
+  const cats=[...new Set([...(d.nodes||[]).map(x=>x.k),...(d.lanes||[]).map(x=>x.k),...(d.groups||[]).map(x=>x.k)])].filter(k=>CATS[k]);
+  const hasExec=(d.nodes||[]).some(x=>x.exec), hasGo=(d.nodes||[]).some(x=>x.go);
+  h+=`<div class="legend">`+cats.map(k=>`<span><i class="k-${k}" style="background:var(--f);border-color:var(--s)"></i>${esc(CATS[k])}</span>`).join('')
+    +(hasExec?`<span><i class="x"></i>Creative code runs here</span>`:'')
+    +(hasGo?`<span><i class="d k-page" style="background:var(--ink2);border-color:var(--ink2)"></i>Opens a deeper map</span>`:'')+`</div>`;
+  (d.code||[]).forEach((c,i)=>{
+    h+=`<h3>${i===0?'Code':''}</h3>`.replace('<h3></h3>','');
+    h+=`<div class="codeblock"><div class="bar"><span>${esc(c.label)}</span><button type="button" data-i="${i}">Copy</button></div><pre><code>${esc(c.body)}</code></pre></div>`;
+  });
+  const p=document.getElementById('panel'); p.innerHTML=h;
+  p.querySelectorAll('.codeblock button').forEach(b=>b.addEventListener('click',()=>{
+    const body=d.code[+b.dataset.i].body;
+    (navigator.clipboard?navigator.clipboard.writeText(body):Promise.reject()).then(()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy',1400);})
+      .catch(()=>{b.textContent='Select and copy';});
+  }));
+}
+
+window.addEventListener('hashchange',()=>render(location.hash.slice(1)||'overview'));
+render(location.hash.slice(1)||'overview');
+</script>
+</body>
+</html>
