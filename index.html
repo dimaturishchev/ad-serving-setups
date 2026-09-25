@@ -258,7 +258,7 @@ const GLOSS = [
   {t:'GPT (Google Publisher Tag)',a:['GPT','Google Publisher Tag','googletag'],d:'Google’s JavaScript library on the page that defines ad slots, sends ad requests to GAM and puts the returned creatives into the slots.'},
   {t:'hb_* keys',r:/(^|[^A-Za-z0-9_])(hb_[A-Za-z_*]+)/,d:'The key-values Prebid sets on the ad request: hb_pb (price bucket), hb_adid (bid ID used to render), hb_bidder, hb_size, hb_format, hb_source, and hb_cache_id / hb_uuid when the bid is stored in Prebid Cache.'},
   {t:'Header bidding',a:['header bidding'],d:"Collecting bids from outside buyers before the ad server is called, so those bids compete with the ad server's own demand. Named after the page's <head>, where the code first ran."},
-  {t:'Header bidding trafficking',a:['header bidding trafficking'],d:'A GAM 360 feature that brings Prebid bids into GAM through yield groups instead of price-bucket line items.'},
+  {t:'Header bidding trafficking',a:['header bidding trafficking'],d:'An optional GAM 360 feature that brings Prebid bids into GAM through yield groups, at their true price, instead of price-bucket line items. It can run alongside the classic line-item setup.'},
   {t:'HLS / DASH',a:['HLS','DASH','manifest'],d:'The two main streaming video formats. A manifest file lists the video segments; stitchers insert ads by rewriting it.'},
   {t:'House ad',a:['house'],d:"The publisher's own filler ads (for example self-promotion), served at the lowest priority when nothing else is eligible."},
   {t:'IAB Tech Lab',a:['IAB'],d:'The industry body that publishes ad tech standards such as OpenRTB, VAST, MRAID and SafeFrame.'},
@@ -493,7 +493,7 @@ overview:{
 
 'prebid-gam':{
   title:'Prebid.js + Google Ad Manager', parent:'web-hb', h:640,
-  summary:`<p>Prebid.js, the open-source header bidding library, runs an auction among SSPs in the browser and hands the top bid to GAM as key-values. A Prebid line item priced at that bid's bucket enters GAM's normal selection and competes against direct campaigns and Google's demand. If it wins, its creative asks Prebid.js for the bid it's holding in memory and draws it.</p><p>Click <em>Prebid wins</em> to see how that creative renders.</p>`,
+  summary:`<p>Prebid.js, the open-source header bidding library, runs an auction among SSPs in the browser and hands the top bid to GAM as key-values. A Prebid line item priced at that bid's bucket enters GAM's normal selection and competes against direct campaigns and Google's demand. If it wins, its creative asks Prebid.js for the bid it's holding in memory and draws it.</p><p>This is the classic setup and works on every GAM tier. Ad Manager 360 also offers <a href="#hbt">header bidding trafficking</a>, which replaces the line items with yield groups; the two can run side by side.</p><p>Click <em>Prebid wins</em> to see how that creative renders.</p>`,
   src:[S.pbSbs,S.pbKv,S.pbSendAll,S.pbCreatives],
   groups:[{x:60,y:310,w:560,h:208,label:'Google Ad Manager auction',k:'gam',info:INFO.gamAuction}],
   nodes:[
@@ -767,15 +767,15 @@ pbs:{
 
 hbt:{
   title:'GAM header bidding trafficking', parent:'web-hb', h:540,
-  summary:`<p>Google's built-in way to bring Prebid into GAM, available only in Ad Manager 360 and only for web inventory (Google lists banner; Prebid's docs also list in-renderer video; native isn't supported). Instead of hundreds of price-bucket line items, each Prebid bidder is set up as a header bidding partner in a yield group.</p><p>GPT collects the bids from Prebid.js on the page itself, so no key-value line items are needed, and the bids compete in GAM's unified auction at their actual price. When one wins, GAM asks Prebid.js to render it.</p>`,
+  summary:`<p>Google's built-in way to bring Prebid into GAM, available only in Ad Manager 360 and only for web inventory (Google lists banner; Prebid's docs also list in-renderer video; native isn't supported). Instead of hundreds of price-bucket line items, each Prebid bidder is set up as a header bidding partner in a yield group.</p><p>GPT collects the bids from Prebid.js on the page itself, so no key-value line items are needed, and the bids compete in GAM's unified auction at their actual price. When one wins, GAM asks Prebid.js to render it.</p><p>It's optional and can run alongside the <a href="#prebid-gam">classic line-item setup</a> in the same network, for example during a migration. Existing Prebid price-priority line items can stay; when a matching header bidding partner is competing, GAM leaves that line item out of the auction, and each impression is counted once.</p>`,
   src:[S.gHbt,S.gHbtFaq,S.pbHbt],
   groups:[{x:60,y:212,w:560,h:208,label:'GAM unified auction',k:'gam',
-    info:`<p>The same auction as always, but header bidding bids now enter as yield group bids next to Open Bidding and AdX, instead of disguised as price-priority line items. Reporting shows them under the "Header bidding" demand channel, per bidder.</p>`}],
+    info:`<p>The same auction as always, but header bidding bids now enter as yield group bids next to Open Bidding and AdX, instead of disguised as price-priority line items. Reporting shows them under the "Header bidding" demand channel, per bidder.</p><p>If classic Prebid line items are still set up, GAM drops a line item from this auction whenever a matching header bidding partner is competing, so the same bid doesn't compete twice.</p>`}],
   nodes:[
     {id:'pj',x:200,y:20,w:280,h:56,t:'Prebid.js on the page',s:'Standard setup',k:'prebid',
       info:`<p>A standard Prebid.js setup with GPT. Google says no tagging changes are needed: Prebid.js runs its auction as usual.</p>`},
     {id:'kv',x:170,y:116,w:340,h:56,t:'GPT reads Prebid\u2019s bids',s:'Bidder and price, no line items',k:'prebid',
-      info:`<p>GPT integrates with Prebid.js on the page and collects the winning bids directly, with their prices, when it sends the ad request. That's why no price-bucket line items are needed and the bid competes at its real price rather than a rounded bucket.</p>`},
+      info:`<p>Google says GPT collects what it needs from the Prebid wrapper directly, with no tagging changes, and that bids compete at their true value rather than through price-priority line items. That's why no price-bucket line items are needed.</p><p>Google doesn't document the exact mechanism. One of its requirements is a working <code>pbjs.getEvents()</code>, Prebid's log of auction events including every bid response, which suggests GPT reads the bids from there. That part is an inference, not something Google states.</p><p>Prebid still sets its usual <code>hb_*</code> key-values on the slots; any classic Prebid line items that remain in the network use them.</p>`},
     {id:'d',x:80,y:262,w:160,h:56,t:'Direct campaigns',s:'Guaranteed',k:'pub',info:INFO.direct},
     {id:'yg',x:260,y:262,w:160,h:56,t:'Header bidding',s:'Yield group per bidder',k:'prebid',
       info:`<p>Each Prebid bidder is set up as a header bidding partner in a yield group, the same interface used for Open Bidding. GAM matches the bid to the partner by bidder name.</p>`},
