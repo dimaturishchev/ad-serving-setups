@@ -150,7 +150,7 @@ svg text{font-family:var(--sans)}
 /* ---------- category labels (legend) ---------- */
 const CATS = {
   page:'Publisher page / app code', gam:'Ad server', pub:"Publisher's own campaigns", google:"Google's programmatic demand",
-  prebid:'Prebid', amazon:'Amazon TAM/UAM', magnite:'Magnite Fastlane', app:'App SDK', xandr:'Microsoft Monetize',
+  prebid:'Prebid', amazon:'Amazon (TAM/UAM, APS)', magnite:'Magnite Fastlane', app:'App SDK', xandr:'Microsoft Monetize',
   video:'Video player / stitcher', net:'Ad network / SSP'
 };
 
@@ -295,6 +295,7 @@ const GLOSS = [
   {t:'SafeFrame',a:['SafeFrame'],d:"An IAB-standard cross-origin iframe for ads. Code inside it can't reach the page, only a small API for things like resizing."},
   {t:'Same-origin / cross-origin',a:['same-origin','cross-origin'],d:"The browser's security boundary: code in one frame can reach another frame's content only when both share scheme, host and port (same-origin)."},
   {t:'SCTE-35',a:['SCTE-35'],d:'A marker standard in live video streams that signals where ad breaks start and end.'},
+  {t:'SDK Bidding',a:['SDK Bidding'],d:"GAM's bidding for app inventory: buyers with their own SDK in the app (such as Meta, Unity Ads or AppLovin) bid in GAM's auction and render the ad with that SDK."},
   {t:'SDK',a:['SDK'],d:'Software development kit: a library compiled into an app.'},
   {t:'Send-all-bids',a:['send-all-bids'],d:"Prebid's default mode: besides the winner's keys, each bidder's own keys are sent with a bidder suffix (for example hb_pb_bidderA)."},
   {t:'Server-to-server (S2S)',a:['server-to-server','server-side','S2S','s2s'],d:'A call made from one server to another rather than from the browser or device.'},
@@ -391,6 +392,9 @@ const S = {
   admobMed:['Google: set up AdMob mediation (Android)','https://developers.google.com/admob/android/mediate'],
   admobBid:['Google: overview of AdMob bidding','https://support.google.com/admob/answer/9234488'],
   max:['AppLovin: MAX integration (Android)','https://developers.applovin.com/en/max/android/overview/integration/'],
+  maxNetworks:['AppLovin MAX: preparing mediated networks (Amazon section)','https://support.applovin.com/en/max/android/preparing-mediated-networks'],
+  gSdkBid:['Google: introduction to SDK Bidding','https://support.google.com/admanager/answer/13965829'],
+  gmaTargeting:['Google: custom targeting in the Mobile Ads SDK (Android)','https://developers.google.com/ad-manager/mobile-ads-sdk/android/targeting'],
   pbVideo:['Prebid: video overview','https://docs.prebid.org/prebid-video/video-overview.html'],
   pbGamVideo:['Prebid: Google Ad Manager video module','https://docs.prebid.org/dev-docs/modules/dfp_video.html'],
   pbVideoLi:['Prebid: GAM video creatives','https://docs.prebid.org/adops/setting-up-prebid-video-in-dfp.html'],
@@ -414,14 +418,14 @@ const S = {
 /* ---------- all diagrams ---------- */
 const D = {
 overview:{
-  title:'All setups at a glance', parent:null, h:456,
+  title:'All setups at a glance', parent:null, h:532,
   summary:`<p>Every ad slot ends the same way: an ad server (or, in apps, a mediation platform) picks a winner, and that ad's creative runs somewhere. The setups differ in who collects bids first, how those bids reach the decision-maker, and who draws the winning ad.</p><p>Click any box with a round marker to open its map. Every other box, including the dashed groups, explains itself when clicked. Underlined terms have definitions, and every term is also in the Glossary.</p>`,
   groups:[
     {x:20,y:20,w:640,h:200,label:'Web pages',k:'frame',
       info:`<p>Display ads on ordinary web pages. The page's JavaScript (Google Publisher Tag, sometimes after a header bidding wrapper) asks an ad server for each slot, and the winning creative renders in an iframe on the page.</p>`},
-    {x:20,y:240,w:310,h:196,label:'Mobile apps',k:'frame',
-      info:`<p>Native iOS and Android apps. Ads are requested by SDKs compiled into the app rather than by page scripts, and creatives render in native views or web views inside the app.</p>`},
-    {x:350,y:240,w:310,h:196,label:'Video',k:'frame',
+    {x:20,y:240,w:310,h:272,label:'Mobile apps',k:'frame',
+      info:`<p>Native iOS and Android apps. Ads are requested by SDKs compiled into the app rather than by page scripts, and creatives render in native views or web views inside the app. The three variants mirror the web: Prebid in front of GAM, Amazon in front of GAM, or a mediation platform instead of an ad server.</p>`},
+    {x:350,y:240,w:310,h:272,label:'Video',k:'frame',
       info:`<p>Video ads are VAST documents, not HTML. A player requests VAST and plays the media file, either in a content player on the page (instream), in a player the ad brings along (outstream), or stitched into the stream by a server (CTV / SSAI).</p>`}
   ],
   nodes:[
@@ -431,10 +435,11 @@ overview:{
     {id:'amp',x:40,y:132,w:294,h:60,t:'AMP pages',s:'Prebid Server via Real Time Config',k:'prebid',go:'amp'},
     {id:'nt',x:346,y:132,w:294,h:60,t:'Native ads',s:'Assets filled into a template',k:'prebid',go:'native'},
     {id:'ap',x:40,y:276,w:270,h:60,t:'Prebid SDK + GAM',s:'Bidding-only or Prebid-rendered',k:'app',go:'app'},
-    {id:'md',x:40,y:352,w:270,h:60,t:'Mediation + in-app bidding',s:'AppLovin MAX, AdMob, LevelPlay',k:'app',go:'app-mediation'},
+    {id:'az',x:40,y:352,w:270,h:60,t:'Amazon APS SDK + GAM',s:'Amazon bid first, then GAM',k:'amazon',go:'app-aps'},
+    {id:'md',x:40,y:428,w:270,h:60,t:'Mediation + in-app bidding',s:'AppLovin MAX, AdMob, LevelPlay',k:'app',go:'app-mediation'},
     {id:'vd',x:370,y:276,w:270,h:60,t:'Instream: Prebid + GAM',s:'VAST via Prebid Cache',k:'video',go:'video'},
-    {id:'os',x:370,y:352,w:129,h:60,t:'Outstream',s:'Prebid renderer',k:'video',go:'outstream'},
-    {id:'ss',x:511,y:352,w:129,h:60,t:'CTV / SSAI',s:'Ads stitched in',k:'video',go:'ssai'}
+    {id:'os',x:370,y:352,w:270,h:60,t:'Outstream: Prebid + GAM',s:'Renderer on the page',k:'video',go:'outstream'},
+    {id:'ss',x:370,y:428,w:270,h:60,t:'CTV / SSAI',s:'Ads stitched into the stream',k:'video',go:'ssai'}
   ],
   edges:[]
 },
@@ -443,7 +448,7 @@ overview:{
   title:'Publisher + GAM, no header bidding', parent:'overview', h:530,
   summary:`<p>The baseline setup: the page asks Google Ad Manager (GAM), the publisher's ad server, for an ad, and GAM picks the winner among the publisher's own campaigns and Google's programmatic demand. No outside bids compete, so Google's buyers only have to beat the prices the publisher set on its own line items.</p>`,
   src:[S.gpt,S.gPriorities,S.gDa,S.gSelection,S.gSafeFrame],
-  groups:[{x:40,y:212,w:600,h:200,label:'GAM ad selection',k:'gam',info:INFO.gamAuction}],
+  groups:[{x:40,y:212,w:600,h:200,label:'Google Ad Manager auction',k:'gam',info:INFO.gamAuction}],
   nodes:[
     {id:'pg',x:200,y:20,w:280,h:56,t:'Page loads GPT',s:'Google Publisher Tag',k:'page',
       info:`<p>Google Publisher Tag (GPT) is Google's ad library on the page. It defines the ad slots, their sizes and page-level targeting, then sends the ad request to GAM (single-request mode batches all slots into one call).</p>`},
@@ -477,22 +482,22 @@ overview:{
   nodes:[
     {id:'pg',x:170,y:20,w:340,h:56,t:'Page runs header bidding',s:'Before calling the ad server',k:'page',
       info:`<p>The page loads GPT with its initial load disabled (<code>googletag.pubads().disableInitialLoad()</code>) so no ad request goes out yet. Wrappers run their auctions with a timeout, write their results onto the GPT slots as key-values, and only then call <code>googletag.pubads().refresh()</code>.</p>`},
-    {id:'pgam',x:40,y:150,w:190,h:56,t:'Prebid.js + GAM',s:'Line items on hb_pb',k:'prebid',go:'prebid-gam'},
-    {id:'amz',x:245,y:150,w:190,h:56,t:'Amazon + GAM',s:'TAM/UAM via apstag',k:'amazon',go:'amazon'},
-    {id:'fl',x:450,y:150,w:190,h:56,t:'Magnite Fastlane + GAM',s:'Legacy single-SSP tag',k:'magnite',go:'fastlane'},
-    {id:'st',x:40,y:226,w:190,h:56,t:'Prebid + Amazon',s:'Both key sets reach GAM',k:'prebid',go:'stack'},
-    {id:'pbs',x:245,y:226,w:190,h:56,t:'Prebid Server + GAM',s:'Auction runs server-side',k:'prebid',go:'pbs'},
-    {id:'hbt',x:450,y:226,w:190,h:56,t:'Prebid via yield groups',s:'GAM 360, no line items',k:'gam',go:'hbt'},
-    {id:'xn',x:40,y:302,w:190,h:56,t:'Prebid + Monetize',s:'Microsoft ad server',k:'xandr',go:'xandr'},
-    {id:'ob',x:245,y:302,w:190,h:56,t:'Google Open Bidding',s:'GAM calls exchanges',k:'google',go:'open-bidding'},
-    {id:'mw',x:450,y:302,w:190,h:56,t:'Managed wrappers',s:'OpenWrap, Demand Mgr',k:'prebid',
+    {id:'pgam',x:30,y:150,w:200,h:56,t:'Prebid.js + GAM',s:'Line items on hb_pb',k:'prebid',go:'prebid-gam'},
+    {id:'amz',x:240,y:150,w:200,h:56,t:'Amazon TAM/UAM + GAM',s:'apstag, amznbid keys',k:'amazon',go:'amazon'},
+    {id:'fl',x:450,y:150,w:200,h:56,t:'Magnite Fastlane + GAM',s:'Legacy single-SSP tag',k:'magnite',go:'fastlane'},
+    {id:'st',x:30,y:226,w:200,h:56,t:'Prebid.js + Amazon',s:'Both key sets reach GAM',k:'prebid',go:'stack'},
+    {id:'pbs',x:240,y:226,w:200,h:56,t:'Prebid Server + GAM',s:'Auction runs server-side',k:'prebid',go:'pbs'},
+    {id:'hbt',x:450,y:226,w:200,h:56,t:'Header bidding trafficking',s:'GAM 360, yield groups',k:'gam',go:'hbt'},
+    {id:'xn',x:30,y:302,w:200,h:56,t:'Prebid.js + Monetize',s:'Microsoft ad server',k:'xandr',go:'xandr'},
+    {id:'ob',x:240,y:302,w:200,h:56,t:'Google Open Bidding',s:'GAM calls exchanges',k:'google',go:'open-bidding'},
+    {id:'mw',x:450,y:302,w:200,h:56,t:'Managed wrappers',s:'OpenWrap, Demand Mgr',k:'prebid',
       info:`<p>Many publishers don't maintain their own Prebid build. PubMatic OpenWrap, Magnite Demand Manager, Index Exchange's wrapper and similar products ship a hosted Prebid.js build plus a UI for bidders, floors, timeouts and GAM line item setup.</p><p>On the page they behave like <em>Prebid.js + GAM</em>: same auction, same universal-creative rendering. Key names can be vendor-specific (OpenWrap uses <code>pwt*</code> keys, for example), so check the line item targeting.</p>`}
   ],
   edges:[{p:[[340,76],[340,108]]}]
 },
 
 'prebid-gam':{
-  title:'Prebid.js + Google Ad Manager', parent:'web-hb', h:640,
+  title:'Prebid.js + GAM', parent:'web-hb', h:640,
   summary:`<p>Prebid.js, the open-source header bidding library, runs an auction among SSPs in the browser and hands the top bid to GAM as key-values. A Prebid line item priced at that bid's bucket enters GAM's normal selection and competes against direct campaigns and Google's demand. If it wins, its creative asks Prebid.js for the bid it's holding in memory and draws it.</p><p>This is the classic setup and works on every GAM tier. Ad Manager 360 also offers <a href="#hbt">header bidding trafficking</a>, which replaces the line items with yield groups; the two can run side by side.</p><p>Click <em>Prebid wins</em> to see how that creative renders.</p>`,
   src:[S.pbSbs,S.pbKv,S.pbSendAll,S.pbCreatives],
   groups:[{x:60,y:310,w:560,h:208,label:'Google Ad Manager auction',k:'gam',info:INFO.gamAuction}],
@@ -673,7 +678,7 @@ fastlane:{
 },
 
 stack:{
-  title:'Prebid + Amazon together', parent:'web-hb', h:630,
+  title:'Prebid.js + Amazon + GAM', parent:'web-hb', h:630,
   summary:`<p>The most common real-world setup on larger sites. Both wrappers run in parallel, the page waits for both (or a shared timeout), and one GAM request carries both sets of keys. GAM then has two header bidding line items competing with direct campaigns and Google's demand.</p>`,
   src:[S.pbSbs,S.aps],
   groups:[{x:40,y:308,w:600,h:208,label:'Google Ad Manager auction',k:'gam',info:INFO.gamAuction}],
@@ -684,16 +689,16 @@ stack:{
     {id:'am',x:360,y:116,w:260,h:56,t:'Amazon auction',s:'Encoded bucket',k:'amazon',go:'amazon'},
     {id:'kv',x:170,y:212,w:340,h:56,t:'One GPT request',s:'hb_pb and amznbid keys',k:'page',
       info:`<p>Both <code>pbjs.setTargetingForGPTAsync()</code> and <code>apstag.setDisplayBids()</code> run before a single <code>refresh()</code>, so GAM sees both sets of keys at once.</p>`},
-    {id:'d',x:60,y:356,w:128,h:56,t:'Direct',s:'Guaranteed',k:'pub',info:INFO.direct},
+    {id:'d',x:60,y:356,w:128,h:56,t:'Direct campaigns',s:'Guaranteed',k:'pub',info:INFO.direct},
     {id:'pl',x:204,y:356,w:128,h:56,t:'Prebid line item',s:'hb_pb=2.50',k:'prebid',
-      info:`<p>The Prebid price-priority line item for the <code>hb_pb</code> bucket, carrying the Prebid Universal Creative. Same setup as in Prebid + GAM.</p>`},
+      info:`<p>The Prebid price-priority line item for the <code>hb_pb</code> bucket, carrying the Prebid Universal Creative. Same setup as in <a href="#prebid-gam">Prebid.js + GAM</a>.</p>`},
     {id:'al',x:348,y:356,w:128,h:56,t:'Amazon line item',s:'amznbid code',k:'amazon',
       info:`<p>The Amazon price-priority line item for the <code>amznbid</code> code, carrying Amazon's creative. It competes on price with the Prebid line item like any two line items at the same priority.</p>`},
     {id:'ax',x:492,y:356,w:128,h:56,t:'Google demand',s:'AdX, Open Bidding',k:'google',info:INFO.adxHB},
     {id:'w',x:220,y:448,w:240,h:44,t:'Highest eligible wins',k:'step',info:INFO.winsHB},
     {id:'o1',x:64,y:556,w:176,h:56,t:'Prebid wins',s:'Creative renders',k:'prebid',exec:true,go:'render'},
     {id:'o2',x:252,y:556,w:176,h:56,t:'Amazon wins',s:'apstag draws the ad',k:'amazon',exec:true,go:'amazon'},
-    {id:'o3',x:440,y:556,w:176,h:56,t:'GAM wins',s:'Direct or AdX',k:'gam',exec:true,info:INFO.gamWins}
+    {id:'o3',x:440,y:556,w:176,h:56,t:'GAM demand wins',s:'Direct or AdX ad serves',k:'gam',exec:true,info:INFO.gamWins}
   ],
   edges:[
     {p:[[300,76],[190,114]]},{p:[[380,76],[490,114]]},
@@ -745,7 +750,7 @@ pbs:{
       info:`<p>Prebid.js receives the server bids, ad markup included, and treats them like any browser-side bid. Storing them in Prebid Cache is optional for display ads; it's required where no Prebid.js can render (AMP, apps, video).</p>`},
     {id:'kv',x:170,y:392,w:340,h:56,t:'GPT ad request to GAM',s:'hb_pb, hb_adid, hb_source=s2s',k:'prebid',
       info:`<p>The same keys as browser-side Prebid, plus <code>hb_source=s2s</code> so line items or reports can tell server bids apart. <code>hb_cache_id</code> is set only if the bid was cached.</p>`},
-    {id:'gm',x:200,y:488,w:280,h:56,t:'Same GAM auction',s:'As in Prebid + GAM',k:'gam',go:'prebid-gam'}
+    {id:'gm',x:200,y:488,w:280,h:56,t:'Same GAM auction',s:'As in Prebid.js + GAM',k:'gam',go:'prebid-gam'}
   ],
   edges:[
     {a:'pj',b:'ps'},
@@ -769,7 +774,7 @@ hbt:{
   title:'GAM header bidding trafficking', parent:'web-hb', h:540,
   summary:`<p>Google's built-in way to bring Prebid into GAM, available only in Ad Manager 360 and only for web inventory (Google lists banner; Prebid's docs also list in-renderer video; native isn't supported). Instead of hundreds of price-bucket line items, each Prebid bidder is set up as a header bidding partner in a yield group.</p><p>GPT collects the bids from Prebid.js on the page itself, so no key-value line items are needed, and the bids compete in GAM's unified auction at their actual price. When one wins, GAM asks Prebid.js to render it.</p><p>It's optional and can run alongside the <a href="#prebid-gam">classic line-item setup</a> in the same network, for example during a migration. Existing Prebid price-priority line items can stay; when a matching header bidding partner is competing, GAM leaves that line item out of the auction, and each impression is counted once.</p>`,
   src:[S.gHbt,S.gHbtFaq,S.pbHbt],
-  groups:[{x:60,y:212,w:560,h:208,label:'GAM unified auction',k:'gam',
+  groups:[{x:60,y:212,w:560,h:208,label:'Google Ad Manager auction',k:'gam',
     info:`<p>The same auction as always, but header bidding bids now enter as yield group bids next to Open Bidding and AdX, instead of disguised as price-priority line items. Reporting shows them under the "Header bidding" demand channel, per bidder.</p><p>If classic Prebid line items are still set up, GAM drops a line item from this auction whenever a matching header bidding partner is competing, so the same bid doesn't compete twice.</p>`}],
   nodes:[
     {id:'pj',x:200,y:20,w:280,h:56,t:'Prebid.js on the page',s:'Standard setup',k:'prebid',
@@ -780,18 +785,18 @@ hbt:{
     {id:'yg',x:260,y:262,w:160,h:56,t:'Header bidding',s:'Yield group per bidder',k:'prebid',
       info:`<p>Each Prebid bidder is set up as a header bidding partner in a yield group, the same interface used for Open Bidding. GAM matches the bid to the partner by bidder name.</p>`},
     {id:'ax',x:440,y:262,w:160,h:56,t:'Google demand',s:'AdX, Open Bidding',k:'google',info:INFO.adx},
-    {id:'w',x:220,y:352,w:240,h:44,t:'Highest bid wins',k:'step',
+    {id:'w',x:220,y:352,w:240,h:44,t:'Highest eligible wins',k:'step',
       info:`<p>Guaranteed campaigns that need the impression still come first. Otherwise header bidding bids, AdX, Open Bidding and the remaining line items compete on price in one auction.</p>`},
-    {id:'o',x:80,y:460,w:240,h:56,t:'Prebid bidder wins',s:'GAM asks Prebid to render',k:'prebid',exec:true,
+    {id:'o',x:80,y:460,w:240,h:56,t:'Prebid wins',s:'GAM asks Prebid to render',k:'prebid',exec:true,
       info:`<p>GAM doesn't have the ad markup; Prebid.js on the page does. GAM's response inlines the relevant part of the Prebid Universal Creative, which calls <code>pbjs.renderAd()</code> on the page, and the bidder's markup runs in the slot. The publisher traffics no creatives.</p>`},
-    {id:'gw',x:360,y:460,w:240,h:56,t:'GAM demand wins',s:'Direct or AdX',k:'gam',exec:true,
+    {id:'gw',x:360,y:460,w:240,h:56,t:'GAM demand wins',s:'Direct or AdX ad serves',k:'gam',exec:true,
       info:`<p>A direct campaign or Google's demand won. GAM serves that creative, and the Prebid bid is never rendered.</p>`}
   ],
   edges:[{a:'pj',b:'kv'},{p:[[340,172],[340,210]]},{p:[[160,318],[250,350]]},{p:[[340,318],[340,350]]},{p:[[520,318],[430,350]]},{p:[[290,396],[210,458]]},{p:[[390,396],[470,458]]}]
 },
 
 xandr:{
-  title:'Prebid + Microsoft Monetize ad server', parent:'web-hb',
+  title:'Prebid.js + Microsoft Monetize', parent:'web-hb',
   summary:`<p>The same Prebid pattern with a different ad server: Microsoft Monetize (formerly Xandr, originally AppNexus). Its page tag is AST, the AppNexus Seller Tag (global object <code>apntag</code>), which plays the role GPT plays for GAM: it defines slots, sends the ad request and shows the result.</p><p>Prebid copies its keys onto the AST tags as keywords (Monetize's name for key-values). Monetize line items target <code>hb_pb</code>, and the creative is the same Prebid Universal Creative with Monetize's <code>#{...}</code> macros instead of GAM's <code>%%PATTERN:...%%</code>.</p><p>Microsoft has been retiring parts of the Xandr stack; check current product status for your account.</p>`,
   src:[S.ast,S.pbAst],
   ...singleFlow({cat:'xandr',server:'Monetize ad server auction',serverCat:'xandr',
@@ -842,13 +847,13 @@ xandr:{
   title:'Google Open Bidding', parent:'web-hb', h:540,
   summary:`<p>Open Bidding is Google's server-side alternative to header bidding. There is no wrapper on the page and no key-values: GPT sends a plain request, and GAM itself calls third-party exchanges server-to-server while it decides. Their bids compete in the unified auction next to AdX and the line items.</p><p>Google takes a fee on Open Bidding wins, and the publisher only sees what GAM reports.</p>`,
   src:[S.gOb,S.gDa],
-  groups:[{x:40,y:212,w:600,h:208,label:'GAM unified auction',k:'gam',info:INFO.gamAuction}],
+  groups:[{x:40,y:212,w:600,h:208,label:'Google Ad Manager auction',k:'gam',info:INFO.gamAuction}],
   nodes:[
     {id:'pg',x:200,y:20,w:280,h:56,t:'Page loads GPT',s:'No wrapper on the page',k:'page',
       info:`<p>The page is identical to the no-header-bidding setup. Everything Open Bidding does happens inside Google's servers.</p>`},
     {id:'rq',x:200,y:116,w:280,h:56,t:'Ad request to GAM',s:'No bid keys attached',k:'page',
       info:`<p>A normal GPT request. The Open Bidding partners are configured in GAM as yield groups targeting ad units, sizes and formats.</p>`},
-    {id:'d',x:60,y:260,w:128,h:56,t:'Direct',s:'Guaranteed',k:'pub',info:INFO.direct},
+    {id:'d',x:60,y:260,w:128,h:56,t:'Direct campaigns',s:'Guaranteed',k:'pub',info:INFO.direct},
     {id:'rl',x:204,y:260,w:128,h:56,t:'Line items',s:'Remnant, house',k:'pub',
       info:`<p>The publisher's price-priority, network and house line items. Without a wrapper, their prices are whatever the publisher set.</p>`},
     {id:'ob',x:348,y:260,w:128,h:56,t:'Open Bidding',s:'Other exchanges',k:'google',
@@ -955,41 +960,33 @@ native:{
 },
 
 app:{
-  title:'Mobile app: Prebid SDK + GAM', parent:'overview', h:640,
-  summary:`<p>An app that uses GAM as its ad server, with bidding SDKs in front of it. The Prebid SDK asks Prebid Server for bids and Amazon's APS SDK asks Amazon; both add keywords (key-values) to the ad request that the Google Mobile Ads (GMA) SDK sends to GAM. GAM decides the same way as on the web.</p><p>A Prebid win renders in one of two modes. <em>Bidding-only</em>: GAM serves the Prebid Universal Creative, which fetches the ad from Prebid Cache. <em>Prebid-rendered</em>: GAM serves only a signal, and the Prebid SDK renders the ad itself (with Open Measurement and SKAdNetwork support).</p><p>Apps that use a mediation platform (AppLovin MAX, AdMob, LevelPlay) instead of GAM follow the mediation map.</p>`,
-  src:[S.pbm,S.pbmGam,S.pbmRender,S.apsHome,S.gMediation,S.mraid],
-  groups:[{x:40,y:308,w:600,h:208,label:'Google Ad Manager auction',k:'gam',info:INFO.gamAuction}],
+  title:'Mobile app: Prebid SDK + GAM', parent:'overview', h:630,
+  summary:`<p>An app that uses GAM as its ad server, with the Prebid SDK in front of it. The Prebid SDK asks Prebid Server for bids, then adds keywords (key-values) to the ad request that the Google Mobile Ads (GMA) SDK sends to GAM. GAM decides the same way as on the web.</p><p>A Prebid win renders in one of two modes. <em>Bidding-only</em>: GAM serves the Prebid Universal Creative, which fetches the ad from Prebid Cache. <em>Prebid-rendered</em>: GAM serves only a signal, and the Prebid SDK renders the ad itself (with Open Measurement and SKAdNetwork support).</p><p>Amazon's in-app SDK works the same way in front of GAM and has <a href="#app-aps">its own map</a>; apps often run both, and both sets of keywords then go on the same GAM request. Apps that use a mediation platform instead of GAM follow the <a href="#app-mediation">mediation map</a>.</p>`,
+  src:[S.pbm,S.pbmGam,S.pbmRender,S.gSdkBid,S.gMediation,S.mraid],
+  groups:[{x:60,y:308,w:560,h:208,label:'Google Ad Manager auction',k:'gam',info:INFO.gamAuction}],
   nodes:[
-    {id:'ap',x:200,y:20,w:280,h:56,t:'App requests an ad',s:'Bidding SDKs go first',k:'app',
-      info:`<p>Before loading the GAM ad, the app asks its bidding SDKs for bids. With Prebid, it calls the ad unit's <code>fetchDemand</code> with the GAM ad request object, and loads the GAM ad in the callback.</p>`},
-    {id:'ps',x:60,y:116,w:260,h:56,t:'Prebid SDK + Prebid Server',s:'Bids cached, keywords back',k:'prebid',
+    {id:'ap',x:200,y:20,w:280,h:56,t:'App requests an ad',s:'Prebid SDK goes first',k:'app',
+      info:`<p>Before loading the GAM ad, the app calls the Prebid SDK ad unit's <code>fetchDemand</code> with the GAM ad request object, and loads the GAM ad in the callback.</p>`},
+    {id:'ps',x:200,y:116,w:280,h:56,t:'Prebid Server auction',s:'Bids cached, keywords back',k:'prebid',
       info:`<p>The Prebid SDK sends one OpenRTB request, identified by a stored-request config ID, to Prebid Server. Prebid Server calls the SSPs, stores the winning creatives in Prebid Cache, and returns keywords to the app.</p>`},
-    {id:'am',x:360,y:116,w:260,h:56,t:'Amazon APS SDK',s:'Amazon bids, keywords back',k:'amazon',
-      info:`<p>Amazon's in-app SDK requests Amazon demand for the slot and returns its result as keywords for the GAM request (for example <code>amznslots</code>, which encodes the price), the in-app counterpart of <code>apstag</code>.</p>`},
-    {id:'kv',x:170,y:212,w:340,h:56,t:'GMA SDK request to GAM',s:'Prebid and Amazon keywords',k:'app',
-      info:`<p>The SDKs add their keys to the GAM request as custom targeting: <code>hb_pb</code>, <code>hb_bidder</code>, <code>hb_cache_id</code> and related keys from Prebid, and Amazon's keys. The Google Mobile Ads SDK then calls GAM.</p>`},
-    {id:'d',x:60,y:356,w:128,h:56,t:'Direct',s:'Guaranteed',k:'pub',info:INFO.direct},
-    {id:'pl',x:204,y:356,w:128,h:56,t:'Prebid line item',s:'Targets hb_pb',k:'prebid',
+    {id:'kv',x:170,y:212,w:340,h:56,t:'GMA SDK request to GAM',s:'hb_pb, hb_cache_id keywords',k:'app',
+      info:`<p>The Prebid SDK adds <code>hb_pb</code>, <code>hb_bidder</code>, <code>hb_cache_id</code> and related keys to the GAM request as custom targeting. The Google Mobile Ads SDK then calls GAM.</p>`},
+    {id:'d',x:80,y:358,w:160,h:56,t:'Direct campaigns',s:'Guaranteed',k:'pub',info:INFO.direct},
+    {id:'li',x:260,y:358,w:160,h:56,t:'Prebid line item',s:'Targets hb_pb',k:'prebid',
       info:`<p>Price-priority line items per bucket, as on the web. The creative depends on the mode: the universal creative in cache mode for bidding-only, or Prebid's signal creative for Prebid-rendered.</p>`},
-    {id:'al',x:348,y:356,w:128,h:56,t:'Amazon line item',s:'Targets amznslots',k:'amazon',
-      info:`<p>Price-priority line items targeting Amazon's keyword values, each with Amazon's in-app creative.</p>`},
-    {id:'gd',x:492,y:356,w:128,h:56,t:'Google demand',s:'AdX, yield groups',k:'google',
-      info:`<p>AdX and Open Bidding compete through dynamic allocation, as on the web. For apps, GAM yield groups can also include mediated ad networks: GAM then calls those networks' SDKs through adapters in the Google Mobile Ads SDK.</p>`},
+    {id:'ax',x:440,y:358,w:160,h:56,t:'Google demand',s:'AdX, SDK Bidding',k:'google',
+      info:`<p>AdX and Open Bidding compete through dynamic allocation, as on the web. For apps GAM adds two more sources: SDK Bidding, where buyers with their own SDK in the app (such as Meta, Unity Ads or AppLovin) bid and render the ad with that SDK; and mediation, where yield groups call ad network SDKs through adapters in the Google Mobile Ads SDK.</p>`},
     {id:'w',x:220,y:448,w:240,h:44,t:'Highest eligible wins',k:'step',info:INFO.winsHB},
-    {id:'o1',x:40,y:556,w:138,h:56,t:'Bidding-only',s:'Cache fetch',k:'prebid',exec:true,go:'render-cache'},
-    {id:'o2',x:194,y:556,w:138,h:56,t:'Prebid-rendered',s:'Prebid SDK renders',k:'app',exec:true,
+    {id:'o1',x:64,y:556,w:176,h:56,t:'Bidding-only',s:'Fetched from cache',k:'prebid',exec:true,go:'render-cache'},
+    {id:'o2',x:252,y:556,w:176,h:56,t:'Prebid-rendered',s:'Prebid SDK renders',k:'app',exec:true,
       info:`<p>The GAM creative is only a signal that the Prebid line item won (it fires a GAM app event). The GMA SDK passes that to the Prebid SDK's event handler, which renders the cached bid with its own renderer: HTML and MRAID in a web view, video natively.</p>`},
-    {id:'o3',x:348,y:556,w:138,h:56,t:'Amazon wins',s:'Amazon creative loads',k:'amazon',exec:true,
-      info:`<p>The Amazon line item's creative, supplied by Amazon, runs in the GMA SDK's web view and loads Amazon's script, which fetches and shows the ad Amazon is holding for this bid.</p>`},
-    {id:'o4',x:502,y:556,w:138,h:56,t:'GAM demand wins',s:'GMA or network SDK',k:'gam',exec:true,
-      info:`<p>A direct campaign, AdX or a mediated network won. The GMA SDK renders GAM's creative, or hands off to the winning network's SDK through its adapter. The header bids are never rendered.</p>`}
+    {id:'o3',x:440,y:556,w:176,h:56,t:'GAM demand wins',s:'GMA or buyer SDK renders',k:'gam',exec:true,
+      info:`<p>A direct campaign, AdX, an SDK Bidding buyer or a mediated network won. The GMA SDK renders GAM's creative, or hands off to the winning buyer's or network's SDK. The Prebid bid is never rendered.</p>`}
   ],
   edges:[
-    {p:[[300,76],[190,114]]},{p:[[380,76],[490,114]]},
-    {p:[[190,172],[290,210]]},{p:[[490,172],[390,210]]},
-    {p:[[340,268],[340,306]]},
-    {p:[[124,412],[250,446]]},{p:[[268,412],[320,446]]},{p:[[412,412],[360,446]]},{p:[[556,412],[430,446]]},
-    {p:[[250,492],[109,554]]},{p:[[310,492],[263,554]]},{p:[[370,492],[417,554]]},{p:[[430,492],[571,554]]}
+    {a:'ap',b:'ps'},{a:'ps',b:'kv'},{p:[[340,268],[340,306]]},
+    {p:[[160,414],[250,446]]},{p:[[340,414],[340,446]]},{p:[[520,414],[430,446]]},
+    {p:[[270,492],[150,554]]},{p:[[340,492],[340,554]]},{p:[[410,492],[530,554]]}
   ],
   code:[{label:'App (Android, Kotlin): Prebid first, then GAM',body:`val adUnit = BannerAdUnit(CONFIG_ID, 300, 250)
 val request = AdManagerAdRequest.Builder().build()
@@ -999,10 +996,36 @@ adUnit.fetchDemand(request) {
 }`},{label:'GAM creative for bidding-only mode (PUC reads from Prebid Cache)',body:SNIP.pucCache}]
 },
 
+'app-aps':{
+  title:'Mobile app: Amazon APS SDK + GAM', parent:'overview',
+  summary:`<p>The in-app counterpart of Amazon on the web. Before loading the GAM ad, the app asks Amazon's APS SDK for a bid; Amazon runs the auction on its own servers. The app then adds Amazon's key-values to the ad request the Google Mobile Ads (GMA) SDK sends to GAM, where an Amazon line item competes like any other.</p><p>Apps often run it next to the Prebid SDK: both sets of keywords go on the same GAM request, as in <a href="#stack">Prebid.js + Amazon</a> on the web. With a mediation platform instead of GAM, the app hands the APS response to the mediation SDK before its auction (see the <a href="#app-mediation">mediation map</a>).</p><p>Amazon documents the exact key names and the GAM creative in its publisher portal rather than publicly, so this map describes them generically.</p>`,
+  src:[S.apsHome,S.maxNetworks,S.gmaTargeting],
+  ...singleFlow({cat:'amazon',
+    t1:'App calls the APS SDK',s1:'Before loading the GAM ad',c1:'app',i1:`<p>The app requests a bid from Amazon's APS SDK for the slot (its APS slot ID and size), for example with a <code>DTBAdLoader</code>, and waits for the callback before loading the GAM ad.</p>`,
+    t2:'Amazon returns a bid',s2:'Auction on Amazon\u2019s servers',i2:`<p>The APS SDK sends one request to Amazon, which runs the auction server-side and returns its result for the slot in a <code>DTBAdResponse</code>. If there's no bid, the app loads the GAM ad without Amazon.</p>`,
+    t3:'GMA SDK request to GAM',s3:'Amazon key-values added',c3:'app',i3:`<p>The app adds the key-values from Amazon's response to the GAM request as custom targeting, next to any Prebid keywords, and the Google Mobile Ads SDK calls GAM. The key names and the price mapping come from Amazon's publisher portal.</p>`,
+    t4:'Amazon line item',s4:'Targets Amazon price keys',i4:`<p>Price-priority line items targeting Amazon's price key-values, each carrying Amazon's in-app creative, just like the Amazon line items on the web.</p>`,
+    axS:'AdX, SDK Bidding',
+    t5:'Amazon wins',s5:'Creative loads Amazon\u2019s ad',i5:`<p>The Amazon line item's creative, supplied by Amazon, runs in the GMA SDK's web view and loads the ad Amazon is holding for this bid. As on the web, the creative points to Amazon's ad rather than containing it.</p>`,
+    gwS:'GMA or buyer SDK renders'}),
+  code:[{label:'App (Android, Kotlin): Amazon first, then GAM (shape; exact calls in Amazon\u2019s docs)',body:`val loader = DTBAdLoader()
+loader.setSizes(DTBAdSize(320, 50, "YOUR_APS_SLOT_UUID"))
+loader.loadAd(object : DTBAdCallback {
+    override fun onSuccess(response: DTBAdResponse) {
+        val builder = AdManagerAdRequest.Builder()
+        // add Amazon's key-values from the response as custom targeting
+        adView.loadAd(builder.build())
+    }
+    override fun onFailure(error: AdError) {
+        adView.loadAd(AdManagerAdRequest.Builder().build())   // GAM without Amazon
+    }
+})`}]
+},
+
 'app-mediation':{
   title:'Mobile app: mediation + in-app bidding', parent:'overview', h:640,
-  summary:`<p>Most apps, especially games, don't use an ad server at all. A mediation SDK (AppLovin MAX, Google AdMob, Unity LevelPlay) bundles adapters for many ad network SDKs, and the mediation platform's server runs the auction. Bidding networks compete in real time; older waterfall entries fill in at fixed prices.</p><p>The winner's own SDK renders the ad inside the app.</p>`,
-  src:[S.admobMed,S.admobBid,S.max,S.mraid],
+  summary:`<p>Most apps, especially games, don't use an ad server at all. A mediation SDK (AppLovin MAX, Google AdMob, Unity LevelPlay) bundles adapters for many ad network SDKs, and the mediation platform's server runs the auction. Bidding networks compete in real time; older waterfall entries fill in at fixed prices.</p><p>Amazon's APS SDK is the exception to token bidding: the app loads its bid first and passes it to the mediation SDK. The winner's own SDK renders the ad inside the app.</p>`,
+  src:[S.admobMed,S.admobBid,S.max,S.maxNetworks,S.mraid],
   groups:[{x:40,y:212,w:600,h:208,label:'Mediation auction',k:'app',
     info:`<p>Run by the mediation platform's server. Bidding networks' prices compete in one auction; in mixed setups the top bid is also compared with waterfall prices, and waterfall entries priced above it are tried first.</p>`}],
   nodes:[
@@ -1011,13 +1034,13 @@ adUnit.fetchDemand(request) {
     {id:'tk',x:200,y:116,w:280,h:56,t:'Bid tokens collected',s:'One per bidding network SDK',k:'net',
       info:`<p>Each bidding network's SDK produces a bid token: an encrypted blob of device and user signals. The mediation SDK sends all tokens in one request to the mediation server, instead of each network being called from the device.</p>`},
     {id:'bd',x:60,y:260,w:128,h:56,t:'Bidding',s:'Real-time bids',k:'net',
-      info:`<p>Ad networks such as Meta Audience Network, Unity Ads, Liftoff (Vungle), Mintegral, InMobi, Pangle, DT Exchange and Amazon Publisher Services get the token server-to-server and return a price.</p>`},
+      info:`<p>Ad networks such as Meta Audience Network, Unity Ads, Liftoff (Vungle), Mintegral, InMobi, Pangle and DT Exchange get the token server-to-server and return a price.</p>`},
     {id:'wf',x:204,y:260,w:128,h:56,t:'Waterfall',s:'Fixed-price entries',k:'net',
       info:`<p>Legacy entries with a fixed or estimated CPM. The SDK calls them one after another from the device until one fills, which is slower than bidding. Most platforms now keep only a few.</p>`},
     {id:'gg',x:348,y:260,w:128,h:56,t:'Google demand',s:'AdMob network',k:'google',
       info:`<p>In AdMob mediation, Google's demand competes as the AdMob Network. In MAX or LevelPlay, Google demand plugs in as a bidder or waterfall network like any other.</p>`},
-    {id:'ps',x:492,y:260,w:128,h:56,t:'Prebid SDK',s:'Custom adapter',k:'prebid',
-      info:`<p>The Prebid SDK can run its Prebid Server auction before the mediation call and pass the price along, so a Prebid custom network entry at that price competes in the mediation auction.</p>`},
+    {id:'ps',x:492,y:260,w:128,h:56,t:'Pre-bid SDKs',s:'Amazon APS, Prebid',k:'net',
+      info:`<p>Some demand runs before the mediation call, header-bidding style, instead of through bid tokens. The app loads a bid from Amazon's APS SDK first and hands the response to the mediation SDK (MAX, for example, takes it as a local extra parameter before <code>loadAd()</code>). The Prebid SDK can likewise run its Prebid Server auction first and pass the price to a Prebid custom network entry.</p>`},
     {id:'w',x:220,y:352,w:240,h:44,t:'Highest price wins',k:'step',
       info:`<p>The highest net price wins. The mediation SDK learns which network won and receives that network's bid payload. Win and loss notices go back to the bidders.</p>`},
     {id:'ld',x:200,y:460,w:280,h:56,t:"Winner's SDK loads the ad",s:'Adapter gets the bid payload',k:'net',
@@ -1124,13 +1147,13 @@ ssai:{
       info:`<p>The SSAI service (Google DAI, AWS MediaTailor and others) rewrites the stream manifest. It finds ad breaks from SCTE-35 markers in live streams or cue points in VOD. With Google DAI, GAM does both the ad decision and the stitching.</p>`},
     {id:'rq',x:170,y:212,w:340,h:56,t:'Server-side ad request',s:'Viewer IP, UA, device ID forwarded',k:'video',
       info:`<p>The stitcher calls the ad server itself. Because the request comes from a server, it must forward the viewer's IP address (<code>X-Forwarded-For</code>), user agent and device advertising ID (IFA) so targeting, frequency capping and fraud checks still work.</p>`},
-    {id:'d',x:60,y:356,w:128,h:56,t:'Direct',s:'Guaranteed',k:'pub',
+    {id:'d',x:60,y:356,w:128,h:56,t:'Direct campaigns',s:'Guaranteed',k:'pub',
       info:`<p>Directly sold TV campaigns, often with strict rules about competing brands and frequency across the pod.</p>`},
     {id:'sp',x:204,y:356,w:128,h:56,t:'SSP demand',s:'Deals, open market',k:'net',
       info:`<p>Ad servers such as FreeWheel and SpringServe call SSPs (Magnite, PubMatic, Index Exchange and others) server-to-server with the forwarded device data, for PMP deals and open auctions. In GAM, programmatic video demand comes through AdX and Open Bidding instead.</p>`},
     {id:'hb',x:348,y:356,w:128,h:56,t:'Header bidding',s:'Prebid Server pods',k:'prebid',
       info:`<p>Optional. Some stitchers first call Prebid Server's video endpoint for a whole pod and pass the returned <code>hb_*</code> keys to the ad server, just like web header bidding. Prebid line items then compete here.</p>`},
-    {id:'ax',x:492,y:356,w:128,h:56,t:'AdX video',s:'Google demand',k:'google',info:INFO.adx},
+    {id:'ax',x:492,y:356,w:128,h:56,t:'Google demand',s:'AdX video',k:'google',info:INFO.adx},
     {id:'w',x:220,y:448,w:240,h:44,t:'Pod filled by price',k:'step',
       info:`<p>Each slot in the pod is filled by priority and price within the pod rules. The ad server returns VAST listing the ads in order, with their media files and tracking URLs.</p>`},
     {id:'sc',x:80,y:556,w:240,h:56,t:'Stitcher inserts the ads',s:'Transcoded into the stream',k:'video',
@@ -1218,7 +1241,7 @@ function render(id){
     document.title=d.title+' | Ad serving setups';
     return;
   }
-  let s=`<svg viewBox="0 0 680 ${d.h}" role="img" aria-labelledby="svgt"><title id="svgt">${esc(d.title)}</title>`;
+  let s=`<svg viewBox="0 0 680 ${d.h}" role="group" aria-label="${esc(d.title)}">`;
   s+=`<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="var(--ink3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>`;
   (d.groups||[]).forEach((g,i)=>{
     const clk=!!g.info;
